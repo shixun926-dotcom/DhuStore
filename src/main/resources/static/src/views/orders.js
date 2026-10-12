@@ -27,7 +27,9 @@ DH.views['orders-view'] = {
   <template v-else>
     <div class="bar">
       <button v-for="t in tabs" :key="t.k" class="pill" :class="{on:tab===t.k}" @click="tab=t.k">
-        {{ t.t }}<span v-if="cntOf(t.k)" style="opacity:.7">{{ cntOf(t.k) }}</span>
+        {{ t.t }}
+        <span v-if="t.k==='2' && store.pending>0" class="pill-badge">{{ store.pending }}</span>
+        <span v-else-if="cntOf(t.k)" style="opacity:.7">{{ cntOf(t.k) }}</span>
       </button>
     </div>
 

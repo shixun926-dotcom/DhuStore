@@ -19,5 +19,7 @@ public interface OrderMapper {
 
     long countAll(@Param("status") Integer status);
 
+    long countByUserIdAndStatus(@Param("userId") Long userId, @Param("status") Integer status);
+
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 }

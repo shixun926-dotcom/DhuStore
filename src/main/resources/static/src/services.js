@@ -139,12 +139,13 @@ function logout() {
   DH.router.go('/');
 }
 
-/** 拉取当前会话的购物车/订单/地址（登录后调用） */
+/** 拉取当前会话的购物车/订单/地址/待处理数（登录后调用） */
 function warmUp() {
   return Promise.all([
     loadCart().catch(function () {}),
     loadOrders().catch(function () {}),
-    loadAddresses().catch(function () {})
+    loadAddresses().catch(function () {}),
+    loadPending().catch(function () {})
   ]);
 }
 
@@ -256,6 +257,19 @@ function loadOrders() {
   });
 }
 
+/** 拉取当前角色的待处理数量，写入 store.pending（管理员=待发货，用户=待收货） */
+function loadPending() {
+  var s = S();
+  if (!s.user) { s.pending = 0; return Promise.resolve(0); }
+  var isAdmin = Number(s.user.role) === 1;
+  var path = isAdmin ? '/admin/orders/summary' : '/orders/summary';
+  var key = isAdmin ? 'pendingShipment' : 'pendingReceipt';
+  return api('GET', path).then(function (d) {
+    s.pending = Number(d && d[key]) || 0;
+    return s.pending;
+  }, function () { return s.pending; });
+}
+
 function createOrder(addressId, payment, remark) {
   return api('POST', '/orders', { addressId: addressId, payment: payment, remark: remark || '' });
 }
@@ -293,7 +307,7 @@ function act(path, okMsg, icon, unsupportedMsg) {
   S().busy = true;
   return api('POST', path).then(function () {
     DH.toast(okMsg, icon);
-    return loadOrders().catch(function () {});
+    return Promise.all([loadOrders(), loadPending()]).catch(function () {});
   }, function (e) {
     if (e === U.HANDLED) return;
     DH.toast(U.isUnsupported(e) && unsupportedMsg ? unsupportedMsg : U.errMsg(e), '⚠️');
@@ -396,7 +410,7 @@ DH.services = {
   removeCart: removeCart, setCartQty: setCartQty, toggleCartLine: toggleCartLine,
   setAllChecked: setAllChecked, clearChecked: clearChecked,
   /* 订单 */
-  loadOrders: loadOrders, createOrder: createOrder, payOrder: payOrder,
+  loadOrders: loadOrders, loadPending: loadPending, createOrder: createOrder, payOrder: payOrder,
   cancelOrder: cancelOrder, confirmOrder: confirmOrder, rebuyOrder: rebuyOrder,
   /* 地址 */
   loadAddresses: loadAddresses, saveAddress: saveAddress,

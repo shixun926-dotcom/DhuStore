@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -35,6 +36,12 @@ public class OrderController {
     @RequireLogin
     public Result<List<OrderVO>> list() {
         return Result.success(orderService.list(UserContext.getUserId()));
+    }
+
+    @GetMapping("/summary")
+    @RequireLogin
+    public Result<Map<String, Long>> summary() {
+        return Result.success(orderService.userSummary(UserContext.getUserId()));
     }
 
     @GetMapping("/{orderNo}")

@@ -57,15 +57,16 @@ DH.components['app-header'] = {
     '            <span>{{ store.user.nickname || store.user.username }}</span>',
     '          </template>',
     '          <template v-else><span class="g">👤</span><span>登录 / 注册</span></template>',
+    '          <span class="badge" v-if="showAvatarBadge">{{ pendingCount }}</span>',
     '        </button>',
     '        <div class="drop" v-if="menu" @click="menu=false">',
     '          <template v-if="store.user">',
     '            <a href="#/user" @click.prevent="go(\'/user\')">👤 个人中心</a>',
-    '            <a href="#/orders" @click.prevent="go(\'/orders\')">📦 我的订单</a>',
+    '            <a href="#/orders" @click.prevent="go(\'/orders\')">📦 我的订单<b class="cnt" v-if="!isAdmin && pendingCount>0">{{ pendingCount }}</b></a>',
     '            <a href="#/user" @click.prevent="go(\'/user\',\'tab=addr\')">📍 收货地址</a>',
     '            <template v-if="store.user.role===1">',
     '              <div class="hr"></div>',
-    '              <a href="#/admin" @click.prevent="go(\'/admin\')">⚙️ 后台管理</a>',
+    '              <a href="#/admin" @click.prevent="go(\'/admin\')">⚙️ 后台管理<b class="cnt" v-if="isAdmin && pendingCount>0">{{ pendingCount }}</b></a>',
     '            </template>',
     '            <div class="hr"></div>',
     '            <a href="#" @click.prevent="logout">↩ 退出登录</a>',
@@ -92,6 +93,12 @@ DH.components['app-header'] = {
         { n: 'orders', t: '我的订单', p: '/orders' },
         { n: 'user', t: '个人中心', p: '/user' }
       ];
+    },
+    pendingCount: function () { return DH.store.pending || 0; },
+    isAdmin: function () { return !!(this.store.user && Number(this.store.user.role) === 1); },
+    showAvatarBadge: function () {
+      if (!this.pendingCount) return false;
+      return this.isAdmin ? this.route.name !== 'admin' : this.route.name !== 'orders';
     }
   },
   methods: {

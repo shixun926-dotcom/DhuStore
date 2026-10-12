@@ -33,7 +33,7 @@ DH.views['admin-view'] = {
       <div class="brand"><span class="mark">东</span>东华后台</div>
       <a v-for="m in menus" :key="m.k" :class="{on:tab===m.k}" @click="tab=m.k">
         <span>{{ m.g }}</span>{{ m.t }}
-        <b v-if="m.k==='orders' && pendingShipment>0" class="badge">{{ pendingShipment }}</b>
+        <b v-if="m.k==='orders' && store.pending>0" class="side-badge">{{ store.pending }}</b>
       </a>
       <div class="hint">当前登录：{{ store.user ? (store.user.nickname || store.user.username) : '—' }}<br>
         数据来自后端 <code>/api</code>，操作实时生效。</div>
@@ -50,11 +50,9 @@ DH.views['admin-view'] = {
 
         <!-- 待处理订单提醒 -->
         <div class="todo-alert">
-          <span style="font-size:20px">{{ (pendingShipment || pendingPayment) ? '📦' : '✅' }}</span>
+          <span style="font-size:20px">{{ store.pending ? '📦' : '✅' }}</span>
           <div style="flex:1;font-size:13.5px">
-            <template v-if="pendingShipment || pendingPayment">
-              待处理订单：<b>{{ pendingShipment }}</b> 单待发货<template v-if="pendingPayment">，<b>{{ pendingPayment }}</b> 单待付款</template>
-            </template>
+            <template v-if="store.pending">待处理订单：<b>{{ store.pending }}</b> 单待发货</template>
             <template v-else>当前没有待处理订单，全部订单已处理完毕</template>
           </div>
           <button class="btn btn-sm" @click="tab='orders'">查看订单 →</button>
@@ -486,8 +484,7 @@ DH.views['admin-view'] = {
       showTrendTable: false, hover: -1,
       goods: [], goodsLoading: false, goodsErr: '', goodsTotal: 0, pq: '', pcat: '',
       gf: null, delTarget: null, saving: false, goodsUnsupported: false,
-      aorders: [], aordLoading: false, aordErr: '', aordUnsupported: false, ostatus: '',
-      pendingShipment: 0, pendingPayment: 0
+      aorders: [], aordLoading: false, aordErr: '', aordUnsupported: false, ostatus: ''
     };
   },
   computed: {
@@ -619,9 +616,9 @@ DH.views['admin-view'] = {
       if (v === 'orders' && !this.aorders.length && !this.aordLoading) this.loadAdminOrders();
     },
     /* 登录后（或换账号）自动拉统计与待处理订单数 */
-    isAdmin: function (v) { if (v) { this.loadStats(); this.loadPendingSummary(); } }
+    isAdmin: function (v) { if (v) { this.loadStats(); SVC.loadPending(); } }
   },
-  mounted: function () { if (this.isAdmin) { this.loadStats(); this.loadPendingSummary(); } },
+  mounted: function () { if (this.isAdmin) { this.loadStats(); SVC.loadPending(); } },
   methods: {
     setRange: function (v) {
       if (this.range === v) return;
@@ -745,19 +742,9 @@ DH.views['admin-view'] = {
       });
     },
 
-    /* ---------- 待处理订单摘要：GET /api/admin/orders/summary ---------- */
-    loadPendingSummary: function () {
-      var self = this;
-      if (!this.isAdmin) return;
-      DH.api.request('GET', '/admin/orders/summary').then(function (d) {
-        self.pendingShipment = Number(d && d.pendingShipment) || 0;
-        self.pendingPayment = Number(d && d.pendingPayment) || 0;
-      }, function () { /* 失败保持原值，不阻塞后台使用 */ });
-    },
-
     ship: function (o) {
       var self = this;
-      SVC.shipOrder(o).then(function () { self.loadAdminOrders(); self.loadPendingSummary(); });
+      SVC.shipOrder(o).then(function () { self.loadAdminOrders(); SVC.loadPending(); });
     }
   }
 };

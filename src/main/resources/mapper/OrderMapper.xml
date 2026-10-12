@@ -46,6 +46,12 @@
         </where>
     </select>
 
+    <select id="countByUserIdAndStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM orders
+        WHERE user_id = #{userId} AND status = #{status}
+    </select>
+
     <update id="updateStatus">
         UPDATE orders SET status = #{status} WHERE id = #{id}
     </update>

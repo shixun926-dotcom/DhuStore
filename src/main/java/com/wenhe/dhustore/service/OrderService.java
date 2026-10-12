@@ -178,6 +178,14 @@ public class OrderService {
         return m;
     }
 
+    /** 用户侧待处理摘要：待付款(status=0) 与 待收货(status=2) 数量 */
+    public Map<String, Long> userSummary(Long userId) {
+        Map<String, Long> m = new LinkedHashMap<>();
+        m.put("pendingPayment", orderMapper.countByUserIdAndStatus(userId, 0));
+        m.put("pendingReceipt", orderMapper.countByUserIdAndStatus(userId, 2));
+        return m;
+    }
+
     private Order getOwned(Long userId, String orderNo) {
         Order order = orderMapper.findByOrderNo(orderNo);
         if (order == null || !order.getUserId().equals(userId)) {

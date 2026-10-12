@@ -197,6 +197,8 @@ DH.initStore = function (Vue) {
     cart: [],
     orders: [],
     addresses: [],
+    /* 待处理提醒数：管理员=待发货，用户=待收货 */
+    pending: 0,
     /* 交互态 */
     busy: false,
     toasts: []
@@ -290,7 +292,7 @@ function clearSession() {
   LS.set('dh_token', null);
   LS.set('dh_user', null);
   var s = DH.store;
-  if (s) { s.user = null; s.cart = []; s.orders = []; s.addresses = []; }
+  if (s) { s.user = null; s.cart = []; s.orders = []; s.addresses = []; s.pending = 0; }
 }
 
 function request(method, path, body) {
