@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>东华购物 · 一站式品质生活商城</title>
+<meta name="description" content="东华购物前端界面 —— Vue 3 + 原生 SVG 图表，数据来自本地 Spring Boot 后端。">
+
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+
+<div id="app">
+  <!-- Vue 挂载前的占位，挂载后被根组件替换 -->
+  <div style="max-width:1200px;margin:0 auto;padding:80px 20px;text-align:center;color:#767d88;
+              font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif">
+    <div style="font-size:44px">🛍️</div>
+    <div style="margin-top:12px;font-size:14px">正在加载东华购物…</div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     应用模块（普通 script，按依赖顺序加载）
+     全部模块在加载期都不依赖 Vue —— Vue 由下面那段 CDN 加载器异步引入，
+     拿到之后再调用 DH.boot(window.Vue) 挂载应用。
+     ========================================================================== -->
+<script src="src/core.js"></script>
+<script src="src/chart.js"></script>
+<script src="src/services.js"></script>
+<script src="src/components.js"></script>
+<script src="src/views/home.js"></script>
+<script src="src/views/list.js"></script>
+<script src="src/views/detail.js"></script>
+<script src="src/views/cart.js"></script>
+<script src="src/views/checkout.js"></script>
+<script src="src/views/orders.js"></script>
+<script src="src/views/user.js"></script>
+<script src="src/views/admin.js"></script>
+<script src="src/main.js"></script>
+
+<script>
+/* Vue 3 运行时：按顺序尝试多个 CDN（含国内镜像），任一成功即刻启动应用。
+   若想彻底离线，把 vue.global.prod.js 放到本文件同目录，并把下面 CDNS
+   的首项改成 './vue.global.prod.js'。 */
+(function () {
+  var CDNS = [
+    'https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js',
+    'https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js',
+    'https://cdn.staticfile.net/vue/3.5.13/vue.global.prod.js',
+    'https://lib.baomitu.com/vue/3.5.13/vue.global.prod.js'
+  ];
+  var i = 0;
+  function next() {
+    if (i >= CDNS.length) return fail();
+    var s = document.createElement('script');
+    s.src = CDNS[i++];
+    s.onload = function () {
+      if (window.Vue && window.DH && window.DH.boot) window.DH.boot(window.Vue);
+      else next();
+    };
+    s.onerror = next;
+    document.head.appendChild(s);
+  }
+  function fail() {
+    document.getElementById('app').innerHTML =
+      '<div style="max-width:520px;margin:80px auto;padding:34px;background:#fff;border-radius:16px;' +
+      'box-shadow:0 12px 36px rgba(16,24,40,.14);text-align:center;font-family:system-ui,-apple-system,sans-serif">' +
+      '<div style="font-size:48px">📡</div>' +
+      '<h2 style="margin:14px 0 10px;font-size:20px;color:#16181d">Vue 运行时加载失败</h2>' +
+      '<p style="color:#52565f;line-height:1.9;font-size:14px;margin:0">本页面通过 CDN 引入 Vue 3，需要联网才能运行。<br>' +
+      '请检查网络后刷新；或下载 <code>vue.global.prod.js</code> 放到本文件同目录，<br>' +
+      '再把页面底部 CDN 列表的首项改为 <code>./vue.global.prod.js</code> 即可离线使用。</p></div>';
+  }
+  window.addEventListener('DOMContentLoaded', next);
+})();
+</script>
+
+</body>
+</html>

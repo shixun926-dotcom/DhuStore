@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.StatsMapper">
+
+    <!-- 已付款及以上（status 1/2/3）视为有效销售额，排除待付款与已取消 -->
+
+    <select id="sumRevenue" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(total_price), 0)
+        FROM orders
+        WHERE status IN (1,2,3) AND create_time &gt;= #{start}
+    </select>
+
+    <select id="sumRevenueBetween" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(total_price), 0)
+        FROM orders
+        WHERE status IN (1,2,3) AND create_time &gt;= #{start} AND create_time &lt; #{end}
+    </select>
+
+    <select id="countOrders" resultType="long">
+        SELECT COUNT(*) FROM orders WHERE create_time &gt;= #{start}
+    </select>
+
+    <select id="countOrdersBetween" resultType="long">
+        SELECT COUNT(*) FROM orders WHERE create_time &gt;= #{start} AND create_time &lt; #{end}
+    </select>
+
+    <select id="countNewUsers" resultType="long">
+        SELECT COUNT(*) FROM `user` WHERE create_time &gt;= #{start}
+    </select>
+
+    <select id="salesByDay" resultType="map">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS d, IFNULL(SUM(total_price), 0) AS v
+        FROM orders
+        WHERE status IN (1,2,3) AND create_time &gt;= #{start}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY d
+    </select>
+
+    <select id="ordersByDay" resultType="map">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS d, COUNT(*) AS v
+        FROM orders
+        WHERE create_time &gt;= #{start}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY d
+    </select>
+
+    <select id="newUsersByDay" resultType="map">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS d, COUNT(*) AS v
+        FROM `user`
+        WHERE create_time &gt;= #{start}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY d
+    </select>
+
+    <select id="catShare" resultType="map">
+        SELECT c.id AS id, c.name AS name, IFNULL(SUM(oi.total_price), 0) AS `value`
+        FROM order_item oi
+        JOIN orders o ON oi.order_id = o.id
+        JOIN product p ON oi.product_id = p.id
+        JOIN category c ON p.category_id = c.id
+        WHERE o.status IN (1,2,3) AND o.create_time &gt;= #{start}
+        GROUP BY c.id, c.name
+        ORDER BY `value` DESC
+    </select>
+
+    <select id="statusDist" resultType="map">
+        SELECT status AS status, COUNT(*) AS `count`
+        FROM orders
+        WHERE create_time &gt;= #{start}
+        GROUP BY status
+        ORDER BY status
+    </select>
+
+    <select id="topGoods" resultType="map">
+        SELECT oi.product_name AS name, IFNULL(SUM(oi.total_price), 0) AS `value`, IFNULL(SUM(oi.quantity), 0) AS `count`
+        FROM order_item oi
+        JOIN orders o ON oi.order_id = o.id
+        WHERE o.status IN (1,2,3) AND o.create_time &gt;= #{start}
+        GROUP BY oi.product_name
+        ORDER BY `value` DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

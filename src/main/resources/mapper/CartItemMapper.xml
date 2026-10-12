@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.CartItemMapper">
+
+    <sql id="cols">id, user_id, product_id, quantity, checked, create_time, update_time</sql>
+
+    <select id="findByUserId" resultType="CartItem">
+        SELECT <include refid="cols"/>
+        FROM cart_item
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByUserIdAndProductId" resultType="CartItem">
+        SELECT <include refid="cols"/>
+        FROM cart_item
+        WHERE user_id = #{userId} AND product_id = #{productId}
+    </select>
+
+    <select id="findCartItemVOsByUserId" resultType="com.wenhe.dhustore.dto.CartItemVO">
+        SELECT c.id, c.product_id, p.name AS product_name, p.main_image, p.price, p.stock, c.quantity, c.checked
+        FROM cart_item c
+        JOIN product p ON c.product_id = p.id
+        WHERE c.user_id = #{userId}
+        ORDER BY c.id DESC
+    </select>
+
+    <insert id="insert" parameterType="CartItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cart_item (user_id, product_id, quantity, checked)
+        VALUES (#{userId}, #{productId}, #{quantity}, #{checked})
+    </insert>
+
+    <update id="update">
+        UPDATE cart_item
+        <set>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="checked != null">checked = #{checked},</if>
+        </set>
+        WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM cart_item WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteByIds">
+        DELETE FROM cart_item
+        WHERE user_id = #{userId} AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

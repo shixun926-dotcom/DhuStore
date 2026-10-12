@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.OrderMapper">
+
+    <sql id="cols">id, order_no, user_id, total_price, payment, status, receiver_name, receiver_phone, receiver_address, remark, payment_time, create_time, update_time</sql>
+
+    <insert id="insert" parameterType="Order" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (order_no, user_id, total_price, payment, status, receiver_name, receiver_phone, receiver_address, remark)
+        VALUES (#{orderNo}, #{userId}, #{totalPrice}, #{payment}, #{status}, #{receiverName}, #{receiverPhone}, #{receiverAddress}, #{remark})
+    </insert>
+
+    <select id="findByOrderNo" resultType="Order">
+        SELECT <include refid="cols"/>
+        FROM orders
+        WHERE order_no = #{orderNo}
+    </select>
+
+    <select id="findById" resultType="Order">
+        SELECT <include refid="cols"/>
+        FROM orders
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId" resultType="Order">
+        SELECT <include refid="cols"/>
+        FROM orders
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="findAll" resultType="Order">
+        SELECT <include refid="cols"/>
+        FROM orders
+        <where>
+            <if test="status != null">status = #{status}</if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM orders
+        <where>
+            <if test="status != null">status = #{status}</if>
+        </where>
+    </select>
+
+    <update id="updateStatus">
+        UPDATE orders SET status = #{status} WHERE id = #{id}
+    </update>
+
+</mapper>

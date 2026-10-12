@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.CategoryMapper">
+
+    <sql id="cols">id, name, parent_id, sort, status, create_time, update_time</sql>
+
+    <select id="findAll" resultType="Category">
+        SELECT <include refid="cols"/>
+        FROM category
+        ORDER BY sort ASC, id ASC
+    </select>
+
+    <select id="findById" resultType="Category">
+        SELECT <include refid="cols"/>
+        FROM category
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="Category" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO category (name, parent_id, sort, status)
+        VALUES (#{name}, #{parentId}, #{sort}, #{status})
+    </insert>
+
+    <update id="update" parameterType="Category">
+        UPDATE category
+        SET name = #{name}, parent_id = #{parentId}, sort = #{sort}, status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM category WHERE id = #{id}
+    </delete>
+
+</mapper>
