@@ -12,7 +12,7 @@ var U = DH.util, SVC = DH.services;
 
 /* 根模板：路由分发 + 全局轻提示容器 */
 var ROOT_TEMPLATE = `
-<div>
+<div class="app-shell">
   <app-header></app-header>
 
   <main class="wrap">

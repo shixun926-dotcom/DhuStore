@@ -165,7 +165,15 @@ select.field{appearance:none;padding-right:32px;
 .drop a:hover{background:var(--line-2);color:var(--ink);}
 .drop .hr{height:1px;background:var(--line);margin:5px 0;}
 
-/* ------------------------------------------------------------ 4. 页脚 */
+/* ------------------------------------ 4. 外壳布局：页脚恒贴视口底部
+   .app-shell 撑满一屏并纵向分栏，main 吃掉剩余空间 —— 内容不足一屏时，
+   页脚被顶到屏幕最下方（不再浮在中间、下面露灰底）；内容超长时照常跟随滚动。
+   main 补 width:100% 是因为它带 margin:0 auto，作为 flex 项会失去拉伸，
+   显式宽度才能让 max-width:1200px 的居中行为与原来完全一致。 */
+.app-shell{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
+.app-shell>main{flex:1 0 auto;width:100%;}
+
+/* ------------------------------------------------------------ 4.1 页脚 */
 .footer{margin-top:48px;padding:36px 0 28px;background:#23262d;color:#9aa0ab;font-size:13px;}
 .footer .cols{display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:32px;}
 .footer h4{color:#fff;font-size:14px;margin-bottom:12px;font-weight:600;}
