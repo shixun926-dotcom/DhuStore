@@ -30,20 +30,28 @@ com.wenhe.dhustore
 
 ## 快速启动
 
-1. 准备 MySQL（本地默认 `root/root`），执行建表脚本：
+1. 准备 MySQL，执行建表脚本：
    ```bash
    mysql -uroot -p < src/main/resources/db/schema.sql
    mysql -uroot -p < src/main/resources/db/data.sql
    ```
-   如需修改连接信息，编辑 `application.properties` 中的 `spring.datasource.*`。
 
-2. 启动应用：
+2. 配置数据库密码与 JWT 密钥（**仓库中不含任何真实凭据**）：
+   ```bash
+   cp src/main/resources/application.properties.example src/main/resources/application-local.properties
+   ```
+   然后填入自己的 `spring.datasource.username` / `spring.datasource.password` / `jwt.secret`。
+   `application-local.properties` 已被 `.gitignore` 忽略，不会被提交。
+   也可以改用环境变量注入：`DB_USERNAME` / `DB_PASSWORD` / `JWT_SECRET`（优先级高于本地配置文件）。
+   `jwt.secret` 需至少 32 字节，可用 `openssl rand -base64 48` 生成。
+
+3. 启动应用：
    ```bash
    mvn spring-boot:run
    ```
    服务默认运行在 `http://localhost:8080`。
 
-3. 先注册一个账号（密码会以 BCrypt 加密存储）：
+4. 先注册一个账号（密码会以 BCrypt 加密存储）：
    ```bash
    curl -X POST http://localhost:8080/api/auth/register \
      -H "Content-Type: application/json" \
