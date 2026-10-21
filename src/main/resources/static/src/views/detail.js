@@ -135,9 +135,10 @@ DH.views['detail-view'] = {
     return { p: null, related: [], qty: 1, viewIdx: 0, loading: false, err: '' };
   },
   computed: {
-    /* 后端只给主图一张；有图才展示缩略图条 */
+    /* 多图：images 按 sort 返回，第一张为主图；无 images 时回退主图 */
     gallery: function () {
       if (!this.p) return [];
+      if (Array.isArray(this.p.images) && this.p.images.length) return this.p.images;
       return this.p.mainImage ? [this.p.mainImage] : [];
     }
   },

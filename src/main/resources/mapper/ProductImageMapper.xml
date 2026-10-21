@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.ProductImageMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO product_image (product_id, image_url, sort)
+        VALUES
+        <foreach collection="items" item="it" separator=",">
+            (#{it.productId}, #{it.imageUrl}, #{it.sort})
+        </foreach>
+    </insert>
+
+    <select id="findByProductId" resultType="ProductImage">
+        SELECT id, product_id, image_url, sort, create_time
+        FROM product_image
+        WHERE product_id = #{productId}
+        ORDER BY sort ASC, id ASC
+    </select>
+
+    <delete id="deleteByProductId">
+        DELETE FROM product_image WHERE product_id = #{productId}
+    </delete>
+
+</mapper>

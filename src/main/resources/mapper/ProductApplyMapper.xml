@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.ProductApplyMapper">
+
+    <sql id="cols">id, user_id, category_id, name, price, stock, description, image, status, reject_reason, create_time, audit_time, auditor_id</sql>
+
+    <insert id="insert" parameterType="ProductApply" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product_apply (user_id, category_id, name, price, stock, description, image, status)
+        VALUES (#{userId}, #{categoryId}, #{name}, #{price}, #{stock}, #{description}, #{image}, #{status})
+    </insert>
+
+    <select id="findById" resultType="ProductApply">
+        SELECT <include refid="cols"/>
+        FROM product_apply
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId" resultType="ProductApply">
+        SELECT <include refid="cols"/>
+        FROM product_apply
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="findAll" resultType="ProductApply">
+        SELECT <include refid="cols"/>
+        FROM product_apply
+        <where>
+            <if test="status != null">status = #{status}</if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <update id="update" parameterType="ProductApply">
+        UPDATE product_apply
+        SET status = #{status},
+            reject_reason = #{rejectReason},
+            audit_time = #{auditTime},
+            auditor_id = #{auditorId}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

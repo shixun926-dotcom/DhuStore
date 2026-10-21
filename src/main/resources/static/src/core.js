@@ -94,7 +94,7 @@ function blankAddr() {
 function blankProduct(cat) {
   return {
     id: 0, name: '', sub: '', cat: cat ? cat.id : null, price: 0, stock: 100, sales: 0,
-    status: 1, mainImage: '', detail: '',
+    status: 1, mainImage: '', images: [], detail: '',
     emoji: cat ? cat.emoji : '🛍️', hue: cat ? cat.hue : 210
   };
 }

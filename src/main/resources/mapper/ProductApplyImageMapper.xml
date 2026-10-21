@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.ProductApplyImageMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO product_apply_image (apply_id, image_url, sort)
+        VALUES
+        <foreach collection="items" item="it" separator=",">
+            (#{it.applyId}, #{it.imageUrl}, #{it.sort})
+        </foreach>
+    </insert>
+
+    <select id="findByApplyId" resultType="ProductApplyImage">
+        SELECT id, apply_id, image_url, sort, create_time
+        FROM product_apply_image
+        WHERE apply_id = #{applyId}
+        ORDER BY sort ASC, id ASC
+    </select>
+
+    <select id="findByApplyIds" resultType="ProductApplyImage">
+        SELECT id, apply_id, image_url, sort, create_time
+        FROM product_apply_image
+        WHERE apply_id IN
+        <foreach collection="applyIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY apply_id ASC, sort ASC, id ASC
+    </select>
+
+</mapper>

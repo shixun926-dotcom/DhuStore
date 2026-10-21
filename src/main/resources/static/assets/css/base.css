@@ -93,6 +93,24 @@ select.field{appearance:none;padding-right:32px;
 .pill .pill-badge{margin-left:4px;background:var(--brand);color:#fff;font-size:11px;font-weight:600;
   line-height:1;padding:3px 7px;border-radius:9px;min-width:16px;text-align:center;}
 
+/* 图片上传器（商品发布 / 商品管理共用） */
+.uploader{display:flex;flex-wrap:wrap;gap:10px;}
+.up-item{position:relative;width:96px;height:96px;border-radius:var(--r-sm);overflow:hidden;
+  border:1px solid var(--line);background:#fafbfc;}
+.up-item img{width:100%;height:100%;object-fit:cover;}
+.up-item .rm{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;font-size:12px;line-height:1;}
+.up-item .rm:hover{background:rgba(208,59,59,.92);}
+.up-item .main-tag{position:absolute;left:4px;bottom:4px;background:var(--brand);color:#fff;
+  font-size:10px;line-height:1;padding:3px 5px;border-radius:4px;}
+.up-item .up-loading{position:absolute;inset:0;display:grid;place-items:center;
+  background:rgba(255,255,255,.72);font-size:11px;color:var(--ink-3);}
+.up-add{width:96px;height:96px;border-radius:var(--r-sm);border:1px dashed #cfd3da;background:#fafbfc;
+  display:grid;place-items:center;text-align:center;color:var(--ink-3);font-size:11.5px;line-height:1.5;}
+.up-add:hover{border-color:var(--brand);color:var(--brand);}
+.up-add .plus{font-size:22px;line-height:1;}
+.up-meta{font-size:12px;color:var(--ink-3);margin-top:8px;}
+
 .price{color:var(--brand);font-weight:700;}
 .price .cur{font-size:.72em;margin-right:1px;}
 .stars{display:inline-flex;gap:1px;color:#f5a623;font-size:12px;letter-spacing:-1px;}

@@ -1,19 +1,30 @@
 package com.wenhe.dhustore.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 /**
- * MVC 配置：注册 JWT 拦截器 + 全局 CORS。
+ * MVC 配置：JWT 拦截器 / 全局 CORS / 本地上传目录静态映射。
  */
 @Configuration
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final JwtInterceptor jwtInterceptor;
+
+    @Value("${file.upload-dir:uploads}")
+    private String uploadDir;
+
+    @Value("${file.public-prefix:/uploads}")
+    private String publicPrefix;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -29,5 +40,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+    }
+
+    /** 本地存储模式下，把上传目录映射为可访问的静态资源 */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        Path root = Paths.get(uploadDir).toAbsolutePath().normalize();
+        String location = root.toUri().toString();
+        if (!location.endsWith("/")) {
+            location += "/";
+        }
+        registry.addResourceHandler(publicPrefix + "/**").addResourceLocations(location);
     }
 }
