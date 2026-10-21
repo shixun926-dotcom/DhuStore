@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `category` (
 CREATE TABLE IF NOT EXISTS `product` (
     `id`          BIGINT         NOT NULL AUTO_INCREMENT,
     `category_id` BIGINT         NOT NULL COMMENT '分类 id',
+    `seller_id`   BIGINT         DEFAULT NULL COMMENT '卖家用户ID，空=平台官方',
     `name`        VARCHAR(100)   NOT NULL COMMENT '商品名',
     `subtitle`    VARCHAR(200)   DEFAULT NULL COMMENT '副标题',
     `main_image`  VARCHAR(255)   DEFAULT NULL COMMENT '主图',
@@ -51,6 +52,48 @@ CREATE TABLE IF NOT EXISTS `product` (
     PRIMARY KEY (`id`),
     KEY `idx_category` (`category_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='商品表';
+
+-- 商品发布申请表
+CREATE TABLE IF NOT EXISTS `product_apply` (
+    `id`            BIGINT         NOT NULL AUTO_INCREMENT,
+    `user_id`       BIGINT         NOT NULL COMMENT '申请用户ID',
+    `category_id`   BIGINT         NOT NULL COMMENT '商品分类ID',
+    `name`          VARCHAR(100)   NOT NULL COMMENT '商品名称',
+    `price`         DECIMAL(10, 2) NOT NULL COMMENT '商品价格',
+    `stock`         INT            NOT NULL DEFAULT 0 COMMENT '库存',
+    `description`   TEXT           COMMENT '商品描述',
+    `image`         VARCHAR(500)   DEFAULT NULL COMMENT '商品图片',
+    `status`        TINYINT        NOT NULL DEFAULT 0 COMMENT '0-待审核 1-通过 2-拒绝',
+    `reject_reason` VARCHAR(500)   DEFAULT NULL COMMENT '拒绝原因',
+    `create_time`   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `audit_time`    DATETIME       DEFAULT NULL COMMENT '审核时间',
+    `auditor_id`    BIGINT         DEFAULT NULL COMMENT '审核管理员ID',
+    PRIMARY KEY (`id`),
+    KEY `idx_user` (`user_id`),
+    KEY `idx_status` (`status`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='商品发布申请表';
+
+-- 商品图片表（一个商品 1~9 张，sort=1 即主图）
+CREATE TABLE IF NOT EXISTS `product_image` (
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT,
+    `product_id`  BIGINT       NOT NULL COMMENT '商品ID',
+    `image_url`   VARCHAR(500) NOT NULL COMMENT '图片地址',
+    `sort`        INT          NOT NULL DEFAULT 1 COMMENT '图片排序，1 为主图',
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_product_id` (`product_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='商品图片表';
+
+-- 商品申请图片表（审核通过后复制到 product_image）
+CREATE TABLE IF NOT EXISTS `product_apply_image` (
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT,
+    `apply_id`    BIGINT       NOT NULL COMMENT '申请ID',
+    `image_url`   VARCHAR(500) NOT NULL COMMENT '图片地址',
+    `sort`        INT          NOT NULL DEFAULT 1 COMMENT '图片排序，1 为主图',
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_apply_id` (`apply_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='商品申请图片表';
 
 -- 收货地址表
 CREATE TABLE IF NOT EXISTS `address` (

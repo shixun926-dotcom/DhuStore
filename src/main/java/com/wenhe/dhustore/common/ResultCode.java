@@ -22,7 +22,13 @@ public enum ResultCode {
     STOCK_NOT_ENOUGH(2001, "商品库存不足"),
     CART_EMPTY(2002, "购物车为空"),
     ORDER_NOT_FOUND(2003, "订单不存在"),
-    ORDER_STATUS_ERROR(2004, "订单状态不允许该操作");
+    ORDER_STATUS_ERROR(2004, "订单状态不允许该操作"),
+    APPLY_ALREADY_AUDITED(2005, "该申请已审核"),
+    FILE_TOO_LARGE(2006, "单张图片大小不能超过5MB"),
+    FILE_TYPE_NOT_ALLOWED(2007, "仅支持 JPG、JPEG、PNG、WEBP 格式"),
+    IMAGE_COUNT_ERROR(2008, "商品图片数量需为 1-9 张"),
+    UPLOAD_FAILED(2009, "图片上传失败，请重试"),
+    OSS_NOT_CONFIGURED(2010, "OSS 未配置 AccessKey，请检查 application-local.properties");
 
     private final int code;
     private final String message;

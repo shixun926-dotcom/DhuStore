@@ -38,3 +38,9 @@ src/main/resources/application-*.properties
 
 ### 本地临时产物 ###
 /cp.txt
+### 本地上传的图片 ###
+/uploads/
+### GraphFlow 本地缓存 ###
+.graphflow/
+.graphflow-cache/
+graphflow-out/

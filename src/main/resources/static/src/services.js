@@ -47,6 +47,9 @@ function adapt(p) {
     sales: Number(p.sales) || 0,
     status: p.status === undefined || p.status === null ? 1 : Number(p.status),
     mainImage: p.mainImage || '',
+    images: Array.isArray(p.images) && p.images.length
+      ? p.images.slice()
+      : (p.mainImage ? [p.mainImage] : []),
     detail: p.detail || '',
     cat: cid,
     /* emoji/hue 是纯前端的占位样式；后端若回传同名字段则优先使用 */
@@ -95,6 +98,52 @@ function loadCats(force) {
 
 function loadProducts(params) {
   return api('GET', '/products?' + buildQuery(params));
+}
+
+/* ------------------------------------------------------------ 图片上传 */
+
+var MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+var IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
+
+/** 前端预校验：格式 + 大小；返回错误文案，通过则返回空串 */
+function checkImage(file) {
+  if (!file) return '请选择图片';
+  if (!IMAGE_EXT.test(file.name || '')) return '仅支持 JPG、JPEG、PNG、WEBP 格式';
+  if (file.size > MAX_IMAGE_SIZE) return '单张图片大小不能超过5MB';
+  return '';
+}
+
+/** 上传单张图片，resolve 图片 URL */
+function uploadImage(file) {
+  var err = checkImage(file);
+  if (err) return Promise.reject({ code: -2, message: err });
+
+  var fd = new FormData();
+  fd.append('file', file);
+  var headers = {};
+  var t = DH.api.getToken();
+  if (t) headers.Authorization = 'Bearer ' + t;
+
+  return fetch(DH.api.BASE + '/common/upload', { method: 'POST', headers: headers, body: fd })
+    .then(function (res) {
+      return res.text().then(function (txt) {
+        var j = null;
+        try { j = JSON.parse(txt); } catch (e) { /* 非 JSON */ }
+        if (j && typeof j.code === 'number') {
+          if (j.code === 200) return j.data;
+          if (j.code === 401) {
+            DH.api.clearSession();
+            DH.toast('登录已过期，请重新登录', '🔒');
+            DH.router.go('/user?tab=login');
+            throw U.HANDLED;
+          }
+          throw { code: j.code, message: j.message || '上传失败' };
+        }
+        throw { code: res.status || 500, message: '图片上传失败，请重试' };
+      });
+    }, function () {
+      throw { code: -1, message: '图片上传失败，请检查网络后重试' };
+    });
 }
 
 /* ------------------------------------------------------------- 二、认证 */
@@ -387,6 +436,7 @@ function saveProduct(g) {
     sales: Number(g.sales) || 0,
     status: Number(g.status),
     mainImage: g.mainImage || '',
+    images: Array.isArray(g.images) ? g.images : [],
     detail: g.detail || '',
     /* emoji/hue 是前端占位样式字段，后端可忽略 */
     emoji: g.emoji || '',
@@ -399,10 +449,44 @@ function deleteProduct(id) {
   return api('DELETE', '/products/' + id);
 }
 
+/* ------------------------------------------------- 七、商品发布申请 */
+
+/** 提交商品发布申请 */
+function applyProduct(payload) {
+  return api('POST', '/product-apply', payload);
+}
+
+/** 我的商品发布申请 */
+function loadMyApplies() {
+  return api('GET', '/product-apply/my').then(function (d) {
+    return U.listOf(d);
+  });
+}
+
+/** 管理端商品发布申请列表（可按状态筛选） */
+function loadApplies(status) {
+  var q = (status === '' || status === undefined || status === null) ? '' : ('?status=' + status);
+  return api('GET', '/admin/product-apply' + q).then(function (d) {
+    return U.listOf(d);
+  });
+}
+
+/** 审核通过 */
+function approveApply(id) {
+  return api('POST', '/admin/product-apply/' + id + '/approve');
+}
+
+/** 审核拒绝（需填原因） */
+function rejectApply(id, reason) {
+  return api('POST', '/admin/product-apply/' + id + '/reject', { reason: reason });
+}
+
 DH.services = {
   /* 商品与分类 */
   buildQuery: buildQuery, adapt: adapt, adaptCart: adaptCart,
   loadCats: loadCats, loadProducts: loadProducts,
+  /* 图片 */
+  uploadImage: uploadImage, checkImage: checkImage,
   /* 认证 */
   login: login, register: register, logout: logout, warmUp: warmUp,
   /* 购物车 */
@@ -417,7 +501,10 @@ DH.services = {
   setDefaultAddress: setDefaultAddress, deleteAddress: deleteAddress,
   /* 后台 */
   loadStats: loadStats, loadAdminOrders: loadAdminOrders,
-  shipOrder: shipOrder, saveProduct: saveProduct, deleteProduct: deleteProduct
+  shipOrder: shipOrder, saveProduct: saveProduct, deleteProduct: deleteProduct,
+  /* 商品发布申请 */
+  applyProduct: applyProduct, loadMyApplies: loadMyApplies,
+  loadApplies: loadApplies, approveApply: approveApply, rejectApply: rejectApply
 };
 
 })(window.DH);

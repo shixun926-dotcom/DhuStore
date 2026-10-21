@@ -31,7 +31,8 @@ var ROOT_TEMPLATE = `
     </div>
   </main>
 
-  <app-footer v-if="route.name!=='admin'"></app-footer>
+  <!-- 页脚只在首页展示 -->
+  <app-footer v-if="route.name==='home'"></app-footer>
 
   <div class="toasts">
     <div class="toast" v-for="t in store.toasts" :key="t.id"><span class="g">{{t.icon}}</span>{{t.msg}}</div>

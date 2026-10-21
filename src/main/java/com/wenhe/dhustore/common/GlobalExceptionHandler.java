@@ -6,6 +6,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 全局异常处理，统一返回 Result 结构。
@@ -27,6 +28,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BindException.class)
     public Result<Void> handleBind(BindException e) {
         return Result.error(ResultCode.BAD_REQUEST.getCode(), firstMessage(e.getBindingResult().getFieldError()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public Result<Void> handleMaxUpload(MaxUploadSizeExceededException e) {
+        return Result.error(ResultCode.FILE_TOO_LARGE);
     }
 
     @ExceptionHandler(Exception.class)

@@ -142,6 +142,64 @@ DH.views['user-view'] = {
         <div v-else class="empty"><div class="ico">📦</div><div>还没有订单</div>
           <button class="btn btn-primary" @click="go('/list')">去逛逛</button></div>
       </div>
+
+      <!-- 申请发布商品 -->
+      <div class="card pad" v-else-if="tab==='publish'">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">申请发布商品</h3>
+        <p style="font-size:12.5px;color:var(--ink-3);margin-bottom:18px">提交后进入审核，管理员通过后才会正式上架商城。</p>
+        <div class="frow">
+          <div><label class="lbl">商品名称<span class="req">*</span></label>
+            <input class="field" v-model.trim="af2.name" placeholder="请输入商品名称"></div>
+          <div><label class="lbl">所属分类<span class="req">*</span></label>
+            <select class="field" v-model="af2.categoryId">
+              <option value="">请选择分类</option>
+              <option v-for="c in store.cats" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select></div>
+        </div>
+        <div class="frow" style="margin-top:14px">
+          <div><label class="lbl">价格（元）<span class="req">*</span></label>
+            <input class="field" type="number" min="0" step="0.01" v-model.number="af2.price"></div>
+          <div><label class="lbl">库存<span class="req">*</span></label>
+            <input class="field" type="number" min="0" v-model.number="af2.stock"></div>
+        </div>
+        <div style="margin-top:14px">
+          <label class="lbl">商品图片<span class="req">*</span>（1–9 张，第一张为主图）</label>
+          <div class="uploader">
+            <div class="up-item" v-for="(u,i) in af2.images" :key="u">
+              <img :src="u" alt="">
+              <span class="main-tag" v-if="i===0">主图</span>
+              <button type="button" class="rm" @click="removeApplyImage(i)">✕</button>
+            </div>
+            <div class="up-add" v-if="af2.images.length < 9" @click="$refs.applyFile.click()">
+              <div><div class="plus">＋</div>上传图片</div>
+            </div>
+          </div>
+          <input type="file" ref="applyFile" accept=".jpg,.jpeg,.png,.webp" multiple
+                 style="display:none" @change="onPickApplyImages">
+          <div class="up-meta">已选择 {{ af2.images.length }}/9 张 · 支持 JPG/PNG/WEBP · 单张不超过 5MB</div>
+        </div>
+        <div style="margin-top:14px"><label class="lbl">商品描述</label>
+          <textarea class="field" rows="3" v-model.trim="af2.description" placeholder="选填"></textarea></div>
+        <button class="btn btn-primary" style="margin-top:18px" :disabled="saving" @click="submitApply">
+          {{ saving ? '提交中…' : '提交申请' }}</button>
+      </div>
+
+      <!-- 我的商品申请 -->
+      <div class="card pad" v-else-if="tab==='myapply'">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:18px">我的商品申请</h3>
+        <div v-if="applyLoading" class="state"><div class="spin"></div><div class="d">正在加载…</div></div>
+        <div v-else-if="myApplies.length">
+          <div v-for="a in myApplies" :key="a.id"
+               style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line-2);flex-wrap:wrap">
+            <span style="flex:1;font-weight:600">{{ a.name }}</span>
+            <span style="width:110px;color:var(--brand);font-weight:700">¥{{ money(a.price) }}</span>
+            <span class="tg" :style="{color:applyStatus(a.status).color}">
+              <span class="dot" :style="{background:applyStatus(a.status).color}"></span>{{ applyStatus(a.status).text }}</span>
+            <span v-if="a.status===2 && a.rejectReason" style="font-size:12.5px;color:var(--ink-3)">原因：{{ a.rejectReason }}</span>
+          </div>
+        </div>
+        <div v-else class="empty"><div class="ico">📝</div><div>还没有提交过商品申请</div></div>
+      </div>
     </div>
   </div>
 
@@ -180,10 +238,14 @@ DH.views['user-view'] = {
       pf: { nickname: '', phone: '', email: '' },
       profileUnsupported: false,
       showAddr: false, editing: false, saving: false, af: U.blankAddr(), _editId: null,
+      af2: { name: '', categoryId: '', price: null, stock: null, description: '', images: [] },
+      myApplies: [], applyLoading: false,
       menus: [
         { k: 'info', g: '👤', t: '个人资料' },
         { k: 'addr', g: '📍', t: '收货地址' },
-        { k: 'order', g: '📦', t: '我的订单' }
+        { k: 'order', g: '📦', t: '我的订单' },
+        { k: 'publish', g: '🛍️', t: '申请发布商品' },
+        { k: 'myapply', g: '📝', t: '我的商品申请' }
       ]
     };
   },
@@ -197,7 +259,9 @@ DH.views['user-view'] = {
     applyTab: function (v) {
       if (v === 'reg') this.mode = 'reg';
       else if (v === 'login') this.mode = 'login';
-      if (v === 'addr' || v === 'order' || v === 'info') this.tab = v;
+      if (v === 'addr' || v === 'order' || v === 'info' || v === 'publish' || v === 'myapply') this.tab = v;
+      if (v === 'publish') SVC.loadCats().catch(function () {});
+      if (v === 'myapply') this.loadMyApplies();
     },
     /* 登录态变化时把资料表单与三份服务端数据同步过来 */
     sync: function () {
@@ -206,6 +270,7 @@ DH.views['user-view'] = {
       this.pf.nickname = u.nickname || '';
       this.pf.phone = u.phone || '';
       this.pf.email = u.email || '';
+      SVC.loadCats().catch(function () {});
       SVC.loadAddresses().catch(function () {});
       SVC.loadCart().catch(function () {});
       SVC.loadOrders().catch(function () {});
@@ -293,6 +358,75 @@ DH.views['user-view'] = {
     fullAddr: function (a) {
       if (!a) return '';
       return [a.province, a.city, a.district, a.detail].filter(Boolean).join(' ');
+    },
+    /* 提交商品发布申请 */
+    submitApply: function () {
+      var self = this, a = this.af2;
+      if (!a.name) return this.toast('请填写商品名称', '⚠️');
+      if (!a.categoryId) return this.toast('请选择分类', '⚠️');
+      if (!(Number(a.price) > 0)) return this.toast('请填写正确的价格', '⚠️');
+      if (!(Number(a.stock) >= 0)) return this.toast('请填写正确的库存', '⚠️');
+      if (!a.images.length) return this.toast('请至少上传一张商品图片', '⚠️');
+      this.saving = true;
+      SVC.applyProduct({
+        name: a.name, categoryId: a.categoryId,
+        price: Number(a.price), stock: Number(a.stock),
+        description: a.description || '', images: a.images
+      }).then(function () {
+        self.toast('申请已提交，等待管理员审核', '🎉');
+        self.saving = false;
+        self.af2 = { name: '', categoryId: '', price: null, stock: null, description: '', images: [] };
+        self.tab = 'myapply';
+        self.loadMyApplies();
+      }, function (e) {
+        self.saving = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    /* 选择本地图片 → 校验 → 上传 → 预览 */
+    onPickApplyImages: function (e) {
+      var self = this;
+      var files = Array.prototype.slice.call(e.target.files || []);
+      e.target.value = '';
+      if (!files.length) return;
+      var remain = 9 - this.af2.images.length;
+      if (remain <= 0) return this.toast('商品图片最多上传9张', '⚠️');
+      if (files.length > remain) {
+        files = files.slice(0, remain);
+        this.toast('商品图片最多上传9张，已选取前 ' + remain + ' 张', '⚠️');
+      }
+      for (var i = 0; i < files.length; i++) {
+        var err = SVC.checkImage(files[i]);
+        if (err) return this.toast(err, '⚠️');
+      }
+      this.saving = true;
+      Promise.all(files.map(function (f) { return SVC.uploadImage(f); }))
+        .then(function (urls) {
+          self.af2.images = self.af2.images.concat(urls.filter(Boolean)).slice(0, 9);
+          self.saving = false;
+        }, function (err) {
+          self.saving = false;
+          if (err !== U.HANDLED) self.toast(U.errMsg(err), '⚠️');
+        });
+    },
+    removeApplyImage: function (i) { this.af2.images.splice(i, 1); },
+    loadMyApplies: function () {
+      var self = this;
+      this.applyLoading = true;
+      SVC.loadMyApplies().then(function (list) {
+        self.myApplies = list;
+        self.applyLoading = false;
+      }, function (e) {
+        self.applyLoading = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    applyStatus: function (s) {
+      var n = Number(s);
+      if (n === 0) return { text: '待审核', color: '#eda100' };
+      if (n === 1) return { text: '已通过', color: '#0ca30c' };
+      if (n === 2) return { text: '已拒绝', color: '#d03b3b' };
+      return { text: '未知', color: '#898781' };
     }
   }
 };

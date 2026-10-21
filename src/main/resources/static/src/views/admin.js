@@ -314,7 +314,7 @@ DH.views['admin-view'] = {
       </div>
 
       <!-- ============ 订单管理 ============ -->
-      <div v-else class="tablewrap">
+      <div v-else-if="tab==='orders'" class="tablewrap">
         <div class="tbl-hd">
           <h3>订单管理</h3>
           <select class="field" style="width:150px" v-model="ostatus" @change="loadAdminOrders">
@@ -383,6 +383,56 @@ DH.views['admin-view'] = {
           </table>
         </div>
       </div>
+
+      <!-- ============ 商品发布申请 ============ -->
+      <div v-else class="tablewrap">
+        <div class="tbl-hd">
+          <h3>商品发布申请</h3>
+          <select class="field" style="width:150px" v-model="aStatus" @change="loadApplies">
+            <option value="">全部状态</option>
+            <option value="0">待审核</option>
+            <option value="1">已通过</option>
+            <option value="2">已拒绝</option>
+          </select>
+          <button class="btn" :disabled="applyLoading" @click="loadApplies">查询</button>
+        </div>
+
+        <div v-if="applyErr" class="state">
+          <div class="ico">📡</div><div class="t">加载失败</div><div class="d">{{ applyErr }}</div>
+          <div class="acts"><button class="btn btn-primary" @click="loadApplies">重新加载</button></div>
+        </div>
+
+        <div v-else-if="applyLoading" class="state"><div class="spin"></div><div class="d">正在加载申请…</div></div>
+
+        <div v-else style="overflow:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:200px">商品</th><th style="width:100px">价格</th><th style="width:80px">库存</th>
+                <th style="width:110px">分类</th><th style="width:100px">状态</th><th style="width:160px">申请时间</th><th style="width:110px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in applies" :key="a.id">
+                <td style="font-weight:500">{{ a.name }}</td>
+                <td class="num" style="color:var(--brand);font-weight:700">¥{{ money(a.price) }}</td>
+                <td class="num">{{ a.stock }}</td>
+                <td><span class="tag">{{ catName(a.categoryId) }}</span></td>
+                <td><span class="tg" :style="{color:applyStatus(a.status).color}">
+                  <span class="dot" :style="{background:applyStatus(a.status).color}"></span>{{ applyStatus(a.status).text }}</span></td>
+                <td class="num" style="font-size:12.5px;color:var(--ink-3)">{{ fmt(a.createTime) }}</td>
+                <td>
+                  <button class="btn btn-sm" v-if="a.status===0" @click="openAudit(a)">审核</button>
+                  <span v-else style="font-size:12.5px;color:var(--ink-3)">—</span>
+                </td>
+              </tr>
+              <tr v-if="!applies.length">
+                <td colspan="7" style="text-align:center;padding:40px;color:var(--ink-3)">暂无商品发布申请</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -425,8 +475,22 @@ DH.views['admin-view'] = {
           <div><label class="lbl">销量</label><input class="field" type="number" min="0" v-model.number="gf.sales"></div>
           <div><label class="lbl">占位图标（emoji）</label><input class="field" v-model.trim="gf.emoji"></div>
         </div>
-        <div style="margin-top:14px"><label class="lbl">主图 URL</label>
-          <input class="field" v-model.trim="gf.mainImage" placeholder="留空则只显示占位图标"></div>
+        <div style="margin-top:14px">
+          <label class="lbl">商品图片（1–9 张，第一张为主图）</label>
+          <div class="uploader">
+            <div class="up-item" v-for="(u,i) in gf.images" :key="u">
+              <img :src="u" alt="">
+              <span class="main-tag" v-if="i===0">主图</span>
+              <button type="button" class="rm" @click="removeProductImage(i)">✕</button>
+            </div>
+            <div class="up-add" v-if="gf.images.length < 9" @click="$refs.goodsFile.click()">
+              <div><div class="plus">＋</div>上传图片</div>
+            </div>
+          </div>
+          <input type="file" ref="goodsFile" accept=".jpg,.jpeg,.png,.webp" multiple
+                 style="display:none" @change="onPickProductImages">
+          <div class="up-meta">已选择 {{ gf.images.length }}/9 张 · 单张不超过 5MB</div>
+        </div>
         <div style="margin-top:14px">
           <label class="lbl">占位主色相（0–360）</label>
           <input type="range" min="0" max="360" v-model.number="gf.hue" style="width:100%;accent-color:var(--brand)">
@@ -468,6 +532,40 @@ DH.views['admin-view'] = {
       </div>
     </div>
   </div>
+
+  <!-- 商品发布申请审核弹窗 -->
+  <div class="mask" v-if="audit" @click.self="audit=null">
+    <div class="modal" style="max-width:520px">
+      <div class="modal-hd"><h3>商品审核</h3><button class="close" @click="audit=null">✕</button></div>
+      <div class="modal-bd">
+        <div style="background:#fafbfc;border-radius:var(--r);padding:14px 16px;margin-bottom:16px">
+          <div style="font-weight:600;font-size:15px">{{ audit.name }}</div>
+          <div style="margin-top:8px;font-size:13px;color:var(--ink-2);line-height:1.9">
+            分类：{{ catName(audit.categoryId) }}<br>
+            价格：<b style="color:var(--brand)">¥{{ money(audit.price) }}</b>　库存：{{ audit.stock }}<br>
+            <template v-if="audit.description">描述：{{ audit.description }}<br></template>
+          </div>
+          <div v-if="audit.images && audit.images.length" class="uploader" style="margin-top:10px">
+            <div class="up-item" v-for="(u,i) in audit.images" :key="u">
+              <img :src="u" alt="">
+              <span class="main-tag" v-if="i===0">主图</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="rejecting">
+          <label class="lbl">拒绝原因<span class="req">*</span></label>
+          <textarea class="field" rows="3" v-model.trim="rejectReason" placeholder="请填写拒绝原因"></textarea>
+        </div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn" @click="audit=null">取消</button>
+        <button class="btn btn-danger" v-if="!rejecting" :disabled="saving" @click="rejecting=true">拒绝</button>
+        <button class="btn btn-primary" :disabled="saving" @click="rejecting ? doReject() : doApprove()">
+          {{ saving ? '处理中…' : (rejecting ? '确认拒绝' : '通过') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>`,
 
   data: function () {
@@ -476,7 +574,8 @@ DH.views['admin-view'] = {
       menus: [
         { k: 'dash', g: '📊', t: '数据看板' },
         { k: 'goods', g: '📦', t: '商品管理' },
-        { k: 'orders', g: '🧾', t: '订单管理' }
+        { k: 'orders', g: '🧾', t: '订单管理' },
+        { k: 'apply', g: '📝', t: '发布申请' }
       ],
       ranges: [{ v: 30, t: '近 30 天' }, { v: 90, t: '近 90 天' }, { v: 365, t: '近 12 个月' }],
       range: 30,
@@ -484,7 +583,9 @@ DH.views['admin-view'] = {
       showTrendTable: false, hover: -1,
       goods: [], goodsLoading: false, goodsErr: '', goodsTotal: 0, pq: '', pcat: '',
       gf: null, delTarget: null, saving: false, goodsUnsupported: false,
-      aorders: [], aordLoading: false, aordErr: '', aordUnsupported: false, ostatus: ''
+      aorders: [], aordLoading: false, aordErr: '', aordUnsupported: false, ostatus: '',
+      applies: [], applyLoading: false, applyErr: '', aStatus: '',
+      audit: null, rejecting: false, rejectReason: ''
     };
   },
   computed: {
@@ -614,6 +715,7 @@ DH.views['admin-view'] = {
     tab: function (v) {
       if (v === 'goods' && !this.goods.length && !this.goodsLoading) this.loadGoods();
       if (v === 'orders' && !this.aorders.length && !this.aordLoading) this.loadAdminOrders();
+      if (v === 'apply' && !this.applies.length && !this.applyLoading) this.loadApplies();
     },
     /* 登录后（或换账号）自动拉统计与待处理订单数 */
     isAdmin: function (v) { if (v) { this.loadStats(); SVC.loadPending(); } }
@@ -675,6 +777,7 @@ DH.views['admin-view'] = {
         this.gf = {
           id: p.id, name: p.name, sub: p.sub, cat: p.cat, price: p.price,
           stock: p.stock, sales: p.sales, status: p.status, mainImage: p.mainImage,
+          images: (p.images || []).slice(),
           detail: p.detail, emoji: p.emoji, hue: p.hue
         };
       } else {
@@ -688,6 +791,8 @@ DH.views['admin-view'] = {
       if (!g) return;
       if (!g.name) return this.toast('请填写商品名称', '⚠️');
       if (!(Number(g.price) >= 0)) return this.toast('请填写正确的售价', '⚠️');
+      if (!g.images || !g.images.length) return this.toast('请至少上传一张商品图片', '⚠️');
+      g.mainImage = g.images[0];
       this.saving = true;
       SVC.saveProduct(g).then(function () {
         self.toast(g.id ? '商品已更新' : '商品已创建', '✅');
@@ -703,6 +808,34 @@ DH.views['admin-view'] = {
         }
       }).then(function () { self.saving = false; }, function () { self.saving = false; });
     },
+
+    /* 商品图片上传（与用户发布申请同一套规则） */
+    onPickProductImages: function (e) {
+      var self = this, g = this.gf;
+      var files = Array.prototype.slice.call(e.target.files || []);
+      e.target.value = '';
+      if (!g || !files.length) return;
+      var remain = 9 - g.images.length;
+      if (remain <= 0) return this.toast('商品图片最多上传9张', '⚠️');
+      if (files.length > remain) {
+        files = files.slice(0, remain);
+        this.toast('商品图片最多上传9张，已选取前 ' + remain + ' 张', '⚠️');
+      }
+      for (var i = 0; i < files.length; i++) {
+        var err = SVC.checkImage(files[i]);
+        if (err) return this.toast(err, '⚠️');
+      }
+      this.saving = true;
+      Promise.all(files.map(function (f) { return SVC.uploadImage(f); }))
+        .then(function (urls) {
+          g.images = g.images.concat(urls.filter(Boolean)).slice(0, 9);
+          self.saving = false;
+        }, function (err) {
+          self.saving = false;
+          if (err !== U.HANDLED) self.toast(U.errMsg(err), '⚠️');
+        });
+    },
+    removeProductImage: function (i) { this.gf.images.splice(i, 1); },
 
     askDel: function (p) { this.delTarget = p; },
 
@@ -745,6 +878,61 @@ DH.views['admin-view'] = {
     ship: function (o) {
       var self = this;
       SVC.shipOrder(o).then(function () { self.loadAdminOrders(); SVC.loadPending(); });
+    },
+
+    /* ---------- 商品发布申请：审核 ---------- */
+    loadApplies: function () {
+      var self = this;
+      this.applyLoading = true;
+      this.applyErr = '';
+      SVC.loadCats().catch(function () {});
+      SVC.loadApplies(this.aStatus).then(function (list) {
+        self.applies = list;
+        self.applyLoading = false;
+      }, function (e) {
+        self.applyLoading = false;
+        if (e === U.HANDLED) return;
+        self.applyErr = U.errMsg(e);
+      });
+    },
+    openAudit: function (a) {
+      this.audit = a;
+      this.rejecting = false;
+      this.rejectReason = '';
+    },
+    doApprove: function () {
+      var self = this;
+      this.saving = true;
+      SVC.approveApply(this.audit.id).then(function () {
+        self.toast('已通过并上架商品', '✅');
+        self.saving = false;
+        self.audit = null;
+        self.loadApplies();
+      }, function (e) {
+        self.saving = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    doReject: function () {
+      var self = this;
+      if (!this.rejectReason) return this.toast('请填写拒绝原因', '⚠️');
+      this.saving = true;
+      SVC.rejectApply(this.audit.id, this.rejectReason).then(function () {
+        self.toast('已拒绝该申请', '🚫');
+        self.saving = false;
+        self.audit = null;
+        self.loadApplies();
+      }, function (e) {
+        self.saving = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    applyStatus: function (s) {
+      var n = Number(s);
+      if (n === 0) return { text: '待审核', color: '#eda100' };
+      if (n === 1) return { text: '已通过', color: '#0ca30c' };
+      if (n === 2) return { text: '已拒绝', color: '#d03b3b' };
+      return { text: '未知', color: '#898781' };
     }
   }
 };
