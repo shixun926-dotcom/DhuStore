@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.FlashSaleMapper">
+
+    <sql id="voCols">
+        f.id, f.product_id, f.sort,
+        p.name, p.subtitle, p.category_id, p.main_image, p.price, p.stock, p.sales, p.status
+    </sql>
+
+    <select id="findAllVO" resultType="com.wenhe.dhustore.dto.FlashSaleVO">
+        SELECT <include refid="voCols"/>
+        FROM flash_sale f
+        LEFT JOIN product p ON p.id = f.product_id
+        ORDER BY f.sort ASC, f.id ASC
+    </select>
+
+    <select id="findActiveVO" resultType="com.wenhe.dhustore.dto.FlashSaleVO">
+        SELECT <include refid="voCols"/>
+        FROM flash_sale f
+        JOIN product p ON p.id = f.product_id
+        WHERE p.status = 1
+        ORDER BY f.sort ASC, f.id ASC
+    </select>
+
+    <select id="findById" resultType="FlashSale">
+        SELECT id, product_id, sort, create_time FROM flash_sale WHERE id = #{id}
+    </select>
+
+    <select id="findByProductId" resultType="FlashSale">
+        SELECT id, product_id, sort, create_time FROM flash_sale WHERE product_id = #{productId}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM flash_sale
+    </select>
+
+    <insert id="insert" parameterType="FlashSale" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO flash_sale (product_id, sort) VALUES (#{productId}, #{sort})
+    </insert>
+
+    <update id="updateProduct">
+        UPDATE flash_sale SET product_id = #{productId} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM flash_sale WHERE id = #{id}
+    </delete>
+
+</mapper>

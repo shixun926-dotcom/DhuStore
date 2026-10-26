@@ -133,19 +133,19 @@ var PROMISES = [
    未配置图片时回落到这里的渐变卡片，保证后台没配图也不缺位。 */
 var PROMOS = [
   { k: 'all', to: '/list', title: '全部商品', sub: '分类浏览，一站买齐', cta: '立即查看',
-    bg: 'linear-gradient(140deg,#2a78d6,#5aa9f5)', emoji: '🔥' },
+    bg: 'linear-gradient(140deg,#2a78d6,#5aa9f5)', ic: 'flame' },
   { k: 'newUser', to: '/user?tab=reg', title: '新人礼包', sub: '注册即领新人优惠', cta: '马上领取',
-    bg: 'linear-gradient(140deg,#eb6834,#ffa06b)', emoji: '🎁' }
+    bg: 'linear-gradient(140deg,#eb6834,#ffa06b)', ic: 'gift' }
 ];
 var STATUS = {
-  0: { text: '待付款', icon: '⏰', color: '#d03b3b' },
-  1: { text: '已付款', icon: '💰', color: '#eda100' },
-  2: { text: '已发货', icon: '🚚', color: '#2a78d6' },
-  3: { text: '已完成', icon: '✅', color: '#0ca30c' },
-  4: { text: '已取消', icon: '🚫', color: '#898781' }
+  0: { text: '待付款', ic: 'clock', color: '#d03b3b' },
+  1: { text: '已付款', ic: 'cash', color: '#eda100' },
+  2: { text: '已发货', ic: 'truck', color: '#2a78d6' },
+  3: { text: '已完成', ic: 'check', color: '#0ca30c' },
+  4: { text: '已取消', ic: 'close', color: '#898781' }
 };
 function statusOf(s) {
-  return STATUS[Number(s)] || { text: '未知状态', icon: '❔', color: '#898781' };
+  return STATUS[Number(s)] || { text: '未知状态', ic: 'dot', color: '#898781' };
 }
 /* 支付方式：1 在线支付 / 2 货到付款 */
 function payText(p) {
@@ -206,6 +206,8 @@ DH.initStore = function (Vue) {
     banners: [],
     /* 首页促销位图片（后端 /api/home/promos），未配置为空串 */
     promoImages: { all: '', newUser: '' },
+    /* 首页限时秒杀位（后端 /api/flash-sale），空数组时回落到按库存自动取前 4 件 */
+    flashSale: [],
     /* 商品 */
     homeProducts: [],
     /* 商品 id → {name, emoji, hue, mainImage}，供购物车/订单行复用占位图 */

@@ -177,6 +177,10 @@ select.field{appearance:none;padding-right:32px;
   border-radius:var(--r-sm);color:var(--ink-2);transition:.15s;}
 .icon-btn:hover{background:var(--line-2);color:var(--ink);}
 .icon-btn .g{font-size:17px;line-height:1;}
+/* 线性图标：与文字基线对齐；容器为 flex 时天然居中 */
+.ui-ic{display:inline-block;vertical-align:-.18em;flex:none;}
+/* 页头头像改为图片后保持 30×30 圆形，裁切填充 */
+img.avatar{display:block;object-fit:cover;background:#2f353e;}
 .avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
   background:linear-gradient(140deg,#5b6472,#2f353e);color:#fff;font-size:13px;font-weight:600;flex:none;}
 .drop{position:absolute;top:52px;right:0;min-width:190px;background:#fff;border:1px solid var(--line);

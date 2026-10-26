@@ -19,7 +19,7 @@ DH.views['orders-view'] = {
   </div>
 
   <div v-if="!store.user" class="state card">
-    <div class="ico">🔒</div><div class="t">请先登录</div>
+    <div class="ico"><ui-icon name="lock" :size="34"></ui-icon></div><div class="t">请先登录</div>
     <div class="d">登录后可查看你的订单记录。</div>
     <div class="acts"><button class="btn btn-primary" @click="go('/user','tab=login')">去登录</button></div>
   </div>
@@ -36,7 +36,7 @@ DH.views['orders-view'] = {
     <div v-if="loading" class="state card"><div class="spin"></div><div class="d">正在加载订单…</div></div>
 
     <div v-else-if="err" class="state card">
-      <div class="ico">📡</div><div class="t">加载失败</div><div class="d">{{ err }}</div>
+      <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">加载失败</div><div class="d">{{ err }}</div>
       <div class="acts"><button class="btn btn-primary" @click="load">重新加载</button></div>
     </div>
 
@@ -51,7 +51,7 @@ DH.views['orders-view'] = {
           <div class="order-goods">
             <div class="og" v-for="(g,i) in o.items" :key="i" style="cursor:pointer" @click="go('/detail/'+g.productId)">
               <div class="thumb" :style="{'--h':hueOf(g.productId)}">
-                <span>{{ emojiOf(g.productId) }}</span>
+                <ui-icon name="box"></ui-icon>
                 <img v-if="g.productImage" :src="g.productImage" alt="" class="gone"
                      @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
               </div>
@@ -83,7 +83,7 @@ DH.views['orders-view'] = {
     </template>
 
     <div v-else class="empty card">
-      <div class="ico">📦</div><div>暂无相关订单</div>
+      <div class="ico"><ui-icon name="box" :size="34"></ui-icon></div><div>暂无相关订单</div>
       <button class="btn btn-primary" @click="go('/list')">去逛逛</button>
     </div>
   </template>
@@ -117,7 +117,7 @@ DH.views['orders-view'] = {
         <div v-for="(g,i) in cur.items" :key="i"
              style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line-2)">
           <div class="thumb" style="width:48px;border-radius:6px;--fs:22px" :style="{'--h':hueOf(g.productId)}">
-            <span>{{ emojiOf(g.productId) }}</span>
+            <ui-icon name="box"></ui-icon>
             <img v-if="g.productImage" :src="g.productImage" alt="" class="gone"
                  @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
           </div>

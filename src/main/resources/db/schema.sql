@@ -180,3 +180,13 @@ CREATE TABLE IF NOT EXISTS `site_setting` (
     `update_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`setting_key`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='站点配置（键值对）';
+
+-- 首页限时秒杀位配置
+CREATE TABLE IF NOT EXISTS `flash_sale` (
+    `id`          BIGINT   NOT NULL AUTO_INCREMENT,
+    `product_id`  BIGINT   NOT NULL COMMENT '商品 ID',
+    `sort`        INT      NOT NULL DEFAULT 0 COMMENT '展示顺序，升序',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_flash_product` (`product_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='首页限时秒杀位配置';

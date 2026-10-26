@@ -25,7 +25,7 @@ var ROOT_TEMPLATE = `
     <user-view      v-else-if="route.name==='user'"     class="view"></user-view>
     <admin-view     v-else-if="route.name==='admin'"    class="view"></admin-view>
     <div v-else class="empty">
-      <div class="ico">🧭</div>
+      <div class="ico"><ui-icon name="compass" :size="34"></ui-icon></div>
       <div>页面不存在</div>
       <button class="btn btn-primary" @click="go('/')">返回首页</button>
     </div>
@@ -35,12 +35,20 @@ var ROOT_TEMPLATE = `
   <app-footer v-if="route.name==='home'"></app-footer>
 
   <div class="toasts">
-    <div class="toast" v-for="t in store.toasts" :key="t.id"><span class="g">{{t.icon}}</span>{{t.msg}}</div>
+    <div class="toast" v-for="t in store.toasts" :key="t.id"><span class="g"><ui-icon v-if="toastIcon(t.icon)" :name="toastIcon(t.icon)" :size="16"></ui-icon><template v-else>{{t.icon}}</template></span>{{t.msg}}</div>
   </div>
 </div>`;
 
 /* 全局混入：所有视图共用的计算属性与工具方法，
    省掉 store / money / go 这些在每个组件里都出现的样板。 */
+/* 轻提示原本用 emoji 做状态标记，这里在渲染层统一映射为线性图标，
+   调用方无需改动（store.toasts 里仍是 emoji 字符串）。 */
+var TOAST_ICON = {
+  '✅': 'check', '⚠️': 'alert', '🚫': 'close', '🔒': 'lock', '🛒': 'cart',
+  '🗑️': 'trash', '📍': 'pin', '💰': 'cash', '🚚': 'truck', '📦': 'box',
+  '🎉': 'sparkle', '👋': 'logout', '🔍': 'search', '❔': 'dot'
+};
+
 var MIXIN = {
   computed: {
     store: function () { return DH.store; },
@@ -76,6 +84,8 @@ var MIXIN = {
     errMsg: U.errMsg,
     status: DH.data.statusOf,
     payText: DH.data.payText,
+    /* emoji → 线性图标名；未登记的返回空串，走原样文本兜底 */
+    toastIcon: function (e) { return TOAST_ICON[e] || ''; },
     catName: function (id) {
       if (id === '' || id === null || id === undefined) return '全部商品';
       var cats = DH.store.cats;

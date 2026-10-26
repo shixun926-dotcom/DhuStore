@@ -58,7 +58,7 @@ DH.views['user-view'] = {
           <template v-else>{{ (store.user.nickname || store.user.username).charAt(0) }}</template>
         </div>
         <div class="nm">{{ store.user.nickname || store.user.username }}</div>
-        <div class="lv">💎 {{ store.user.role===1 ? '超级管理员' : 'V2 黄金会员' }}</div>
+        <div class="lv"><ui-icon name="diamond" :size="12"></ui-icon> {{ store.user.role===1 ? '超级管理员' : 'V2 黄金会员' }}</div>
         <div class="uc-stats">
           <div><b>{{ store.orders.length }}</b><small>订单</small></div>
           <div><b>{{ store.cart.length }}</b><small>购物车</small></div>
@@ -72,10 +72,10 @@ DH.views['user-view'] = {
                     background: tab===m.k ? 'var(--brand-l2)' : 'transparent',
                     borderLeft: '3px solid ' + (tab===m.k ? 'var(--brand)' : 'transparent'),
                     fontWeight: tab===m.k ? 600 : 400}">
-          <span>{{ m.g }}</span>{{ m.t }}
+          <ui-icon :name="m.ic" :size="16"></ui-icon>{{ m.t }}
         </a>
         <a href="#" @click.prevent="logout"
-           style="display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13.5px;color:var(--ink-3)">↩ 退出登录</a>
+           style="display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13.5px;color:var(--ink-3)"><ui-icon name="logout" :size="16"></ui-icon>退出登录</a>
       </div>
     </aside>
 
@@ -111,7 +111,7 @@ DH.views['user-view'] = {
           <div><label class="lbl">邮箱</label><input class="field" v-model.trim="pf.email" placeholder="未绑定"></div>
         </div>
         <div class="notice" style="margin-top:18px" v-if="profileUnsupported">
-          <span class="g">⚠️</span>
+          <span class="g"><ui-icon name="alert" :size="20"></ui-icon></span>
           <div>
             <b>后端暂未提供资料修改接口</b>
             <p>契约接口为 <code>PUT /api/users/me</code>，接收 <code>{nickname, phone, email, avatar}</code>，
@@ -144,7 +144,7 @@ DH.views['user-view'] = {
             </div>
           </div>
         </div>
-        <div v-else class="empty"><div class="ico">📍</div><div>还没有收货地址</div></div>
+        <div v-else class="empty"><div class="ico"><ui-icon name="pin" :size="34"></ui-icon></div><div>还没有收货地址</div></div>
       </div>
 
       <!-- 我的订单摘要 -->
@@ -162,7 +162,7 @@ DH.views['user-view'] = {
             <b style="color:var(--brand);width:100px;text-align:right">¥{{ money(o.totalPrice) }}</b>
           </div>
         </div>
-        <div v-else class="empty"><div class="ico">📦</div><div>还没有订单</div>
+        <div v-else class="empty"><div class="ico"><ui-icon name="box" :size="34"></ui-icon></div><div>还没有订单</div>
           <button class="btn btn-primary" @click="go('/list')">去逛逛</button></div>
       </div>
 
@@ -221,7 +221,7 @@ DH.views['user-view'] = {
             <span v-if="a.status===2 && a.rejectReason" style="font-size:12.5px;color:var(--ink-3)">原因：{{ a.rejectReason }}</span>
           </div>
         </div>
-        <div v-else class="empty"><div class="ico">📝</div><div>还没有提交过商品申请</div></div>
+        <div v-else class="empty"><div class="ico"><ui-icon name="file" :size="34"></ui-icon></div><div>还没有提交过商品申请</div></div>
       </div>
     </div>
   </div>
@@ -266,11 +266,11 @@ DH.views['user-view'] = {
       af2: { name: '', categoryId: '', price: null, stock: null, description: '', images: [] },
       myApplies: [], applyLoading: false,
       menus: [
-        { k: 'info', g: '👤', t: '个人资料' },
-        { k: 'addr', g: '📍', t: '收货地址' },
-        { k: 'order', g: '📦', t: '我的订单' },
-        { k: 'publish', g: '🛍️', t: '申请发布商品' },
-        { k: 'myapply', g: '📝', t: '我的商品申请' }
+        { k: 'info', ic: 'user', t: '个人资料' },
+        { k: 'addr', ic: 'pin', t: '收货地址' },
+        { k: 'order', ic: 'box', t: '我的订单' },
+        { k: 'publish', ic: 'bag', t: '申请发布商品' },
+        { k: 'myapply', ic: 'file', t: '我的商品申请' }
       ]
     };
   },

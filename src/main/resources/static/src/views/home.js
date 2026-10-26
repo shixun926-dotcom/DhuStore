@@ -37,7 +37,7 @@ DH.views['home-view'] = {
         <img v-if="p.image" class="promo-img" :src="p.image" :alt="p.title">
         <template v-else>
           <b>{{ p.title }}</b><small>{{ p.sub }}</small>
-          <span class="go">{{ p.cta }} →</span><span class="g">{{ p.emoji }}</span>
+          <span class="go">{{ p.cta }} →</span><span class="g"><ui-icon :name="p.ic" :size="64"></ui-icon></span>
         </template>
       </div>
     </div>
@@ -92,7 +92,7 @@ DH.views['home-view'] = {
   <!-- 限时秒杀 -->
   <section class="flash sec" v-if="flashGoods.length">
     <div class="flash-hd">
-      <h3>⚡ 限时秒杀</h3>
+      <h3><ui-icon name="bolt" :size="17"></ui-icon> 限时秒杀</h3>
       <span class="sub">每日 10:00 / 20:00 两场 · 抢完即止</span>
       <div class="clock">
         <span style="font-size:12px;color:#9aa0ab">距本场结束</span>
@@ -102,7 +102,7 @@ DH.views['home-view'] = {
     <div class="flash-grid">
       <div class="fcard" v-for="p in flashGoods" :key="p.id" @click="go('/detail/'+p.id)">
         <div class="thumb" :style="{'--h':p.hue,'--fs':'64px'}">
-          <span>{{ p.emoji }}</span>
+          <ui-icon name="box"></ui-icon>
           <img v-if="p.mainImage" :src="p.mainImage" alt="" class="gone"
                @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
         </div>
@@ -126,7 +126,7 @@ DH.views['home-view'] = {
     </div>
 
     <div v-if="err" class="state card">
-      <div class="ico">📡</div>
+      <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div>
       <div class="t">商品加载失败</div>
       <div class="d">{{ err }}</div>
       <div class="acts"><button class="btn btn-primary" @click="load">重新加载</button></div>
@@ -144,7 +144,7 @@ DH.views['home-view'] = {
     </div>
 
     <div v-else class="state card">
-      <div class="ico">📦</div>
+      <div class="ico"><ui-icon name="box" :size="34"></ui-icon></div>
       <div class="t">暂无在售商品</div>
       <div class="d">后端商品表还没有上架商品，登录管理后台添加，或向 <code>product</code> 表插入数据。</div>
     </div>
@@ -165,7 +165,7 @@ DH.views['home-view'] = {
       var imgs = this.store.promoImages || {};
       return DH.data.promos.map(function (p) {
         return { k: p.k, to: p.to, title: p.title, sub: p.sub, cta: p.cta,
-                 bg: p.bg, emoji: p.emoji, image: imgs[p.k] || '' };
+                 bg: p.bg, ic: p.ic, image: imgs[p.k] || '' };
       });
     },
     /* 折叠态的容器高度：展开用完整高度，收起用「两排 + 半排」 */
@@ -180,9 +180,14 @@ DH.views['home-view'] = {
               'px, transparent ' + this.catsClipH + 'px)';
       return { maskImage: g, WebkitMaskImage: g };
     },
-    /* 秒杀位取在售且有库存的前 4 件；进度 = 已售 /（已售+库存），是真实比例 */
+    /* 秒杀位优先用后台配置；未配置时回落到按库存自动取前 4 件。
+       进度 = 已售 /（已售+库存），是真实比例 */
     flashGoods: function () {
-      return this.store.homeProducts.filter(function (p) { return p && p.stock > 0; }).slice(0, 4).map(function (p) {
+      var list = (this.store.flashSale || []).slice(0, 4);
+      if (!list.length) {
+        list = this.store.homeProducts.filter(function (p) { return p && p.stock > 0; });
+      }
+      return list.slice(0, 4).map(function (p) {
         var total = p.sales + p.stock;
         var q = Object.assign({}, p);
         q.progress = total > 0 ? Math.round(p.sales / total * 100) : 0;
@@ -214,6 +219,8 @@ DH.views['home-view'] = {
       SVC.loadBanners().catch(function () {});
       /* 促销位图片来自后台；失败时回落到内置渐变卡片 */
       SVC.loadPromos().catch(function () {});
+      /* 秒杀位来自后台配置；失败时由上面的计算属性回落到自动取件 */
+      SVC.loadFlashSale().catch(function () {});
       SVC.loadProducts({ page: 1, size: 16 }).then(function (d) {
         self.store.homeProducts = U.listOf(d).map(SVC.adapt);
         self.loading = false;

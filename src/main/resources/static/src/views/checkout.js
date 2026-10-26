@@ -22,13 +22,13 @@ DH.views['checkout-view'] = {
   <div v-if="loading" class="state card"><div class="spin"></div><div class="d">正在加载订单信息…</div></div>
 
   <div v-else-if="!store.user" class="state card">
-    <div class="ico">🔒</div><div class="t">请先登录</div>
+    <div class="ico"><ui-icon name="lock" :size="34"></ui-icon></div><div class="t">请先登录</div>
     <div class="d">下单需要登录后才能进行。</div>
     <div class="acts"><button class="btn btn-primary" @click="go('/user','tab=login')">去登录</button></div>
   </div>
 
   <div v-else-if="!items.length" class="state card">
-    <div class="ico">🧾</div><div class="t">没有待结算的商品</div>
+    <div class="ico"><ui-icon name="receipt" :size="34"></ui-icon></div><div class="t">没有待结算的商品</div>
     <div class="d">购物车里还没有勾选商品。先去挑几件，或在购物车里勾选要结算的商品。</div>
     <div class="acts">
       <button class="btn btn-primary" @click="go('/list')">去逛逛</button>
@@ -52,7 +52,7 @@ DH.views['checkout-view'] = {
           </div>
         </div>
         <div v-else class="empty" style="padding:30px 10px">
-          <div class="ico">📍</div>
+          <div class="ico"><ui-icon name="pin" :size="34"></ui-icon></div>
           <div style="font-size:13px">还没有收货地址，请先添加</div>
           <button class="btn btn-primary btn-sm" @click="openAddr()">添加收货地址</button>
         </div>
@@ -80,11 +80,11 @@ DH.views['checkout-view'] = {
         <h3 style="font-size:16px;font-weight:700;margin-bottom:14px">配送与支付</h3>
         <div class="opt-row" style="border-top:none;padding-top:0">
           <div class="k">配送方式</div>
-          <div class="opt"><span class="tag">🚚 标准配送（48 小时内发出）</span></div>
+          <div class="opt"><span class="tag"><ui-icon name="truck" :size="14"></ui-icon> 标准配送（48 小时内发出）</span></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
           <div class="pay-opt" v-for="pm in pays" :key="pm.k" :class="{on:payment===pm.k}" @click="payment=pm.k">
-            <span class="g">{{ pm.g }}</span>
+            <span class="g"><ui-icon :name="pm.ic" :size="20"></ui-icon></span>
             <div><b style="font-size:13.5px">{{ pm.t }}</b><div style="font-size:11.5px;color:var(--ink-3)">{{ pm.d }}</div></div>
             <span class="rd"></span>
           </div>
@@ -107,8 +107,8 @@ DH.views['checkout-view'] = {
       </p>
 
       <div style="margin-top:14px;background:#fafbfc;border-radius:var(--r-sm);padding:12px;font-size:12px;color:var(--ink-3);line-height:1.7">
-        📍 {{ addr ? fullAddr(addr) : '请选择收货地址' }}<br>
-        👤 {{ addr ? addr.receiverName + ' ' + addr.receiverPhone : '—' }}
+        <span style="display:inline-flex;align-items:center;gap:5px"><ui-icon name="pin" :size="13"></ui-icon>{{ addr ? fullAddr(addr) : '请选择收货地址' }}</span><br>
+        <span style="display:inline-flex;align-items:center;gap:5px"><ui-icon name="user" :size="13"></ui-icon>{{ addr ? addr.receiverName + ' ' + addr.receiverPhone : '—' }}</span>
       </div>
 
       <button class="btn btn-lg btn-primary btn-block" style="margin-top:16px"
@@ -159,8 +159,8 @@ DH.views['checkout-view'] = {
       loading: false, addrId: null, payment: 1, remark: '', submitting: false,
       showAddr: false, saving: false, af: U.blankAddr(),
       pays: [
-        { k: 1, g: '💳', t: '在线支付', d: '下单后立即付款' },
-        { k: 2, g: '💵', t: '货到付款', d: '收到商品再付款' }
+        { k: 1, ic: 'card', t: '在线支付', d: '下单后立即付款' },
+        { k: 2, ic: 'cash', t: '货到付款', d: '收到商品再付款' }
       ]
     };
   },

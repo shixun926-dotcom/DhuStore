@@ -21,7 +21,7 @@ DH.views['detail-view'] = {
 
   <!-- 加载失败 -->
   <div v-else-if="err" class="state card" style="margin-top:20px">
-    <div class="ico">📡</div>
+    <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div>
     <div class="t">加载失败</div>
     <div class="d">{{ err }}</div>
     <div class="acts">
@@ -42,7 +42,7 @@ DH.views['detail-view'] = {
       <div>
         <div class="fig">
           <div class="thumb" :style="{'--h':p.hue}">
-            <span>{{ p.emoji }}</span>
+            <ui-icon name="box"></ui-icon>
             <img v-if="gallery[viewIdx]" :src="gallery[viewIdx]" alt="" class="gone"
                  @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
           </div>
@@ -50,7 +50,7 @@ DH.views['detail-view'] = {
         <div class="thumbs" v-if="gallery.length > 1">
           <div class="t" v-for="(v,i) in gallery" :key="i" :class="{on:i===viewIdx}" @click="viewIdx=i">
             <div class="thumb" :style="{'--h':(p.hue+i*26)%360}">
-              <span>{{ p.emoji }}</span>
+              <ui-icon name="box"></ui-icon>
               <img v-if="v" :src="v" alt="" class="gone"
                    @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
             </div>
@@ -75,7 +75,7 @@ DH.views['detail-view'] = {
         <div class="opt-row">
           <div class="k">服务</div>
           <div class="opt" style="align-items:center;gap:10px">
-            <span class="tag tag-ok" v-if="p.stock>0">🚚 现货 · 48 小时内发出</span>
+            <span class="tag tag-ok" v-if="p.stock>0"><ui-icon name="truck" :size="14"></ui-icon> 现货 · 48 小时内发出</span>
             <span class="tag tag-warn" v-else>⏳ 暂时缺货</span>
           </div>
         </div>
@@ -95,14 +95,14 @@ DH.views['detail-view'] = {
         <div class="buy-row">
           <button class="btn btn-lg btn-primary" style="flex:1" :disabled="busy || p.stock<=0"
                   @click="addToCart">
-            🛒 {{ busy ? '处理中…' : '加入购物车' }}
+            <ui-icon name="cart" :size="17"></ui-icon> {{ busy ? '处理中…' : '加入购物车' }}
           </button>
           <button class="btn btn-lg btn-dark" style="flex:1" :disabled="busy || p.stock<=0"
-                  @click="buyNow">⚡ 立即购买</button>
+                  @click="buyNow"><ui-icon name="bolt" :size="17"></ui-icon> 立即购买</button>
         </div>
 
         <div style="display:flex;gap:20px;margin-top:16px;font-size:12.5px;color:var(--ink-3);flex-wrap:wrap">
-          <span>✅ 正品保障</span><span>↩️ 7 天无理由</span><span>🛡️ 全国联保</span><span>🚚 满 99 包邮</span>
+          <span><ui-icon name="check" :size="14"></ui-icon> 正品保障</span><span><ui-icon name="rotate" :size="14"></ui-icon> 7 天无理由</span><span><ui-icon name="shield" :size="14"></ui-icon> 全国联保</span><span><ui-icon name="truck" :size="14"></ui-icon> 满 99 包邮</span>
         </div>
       </div>
     </div>
@@ -125,7 +125,7 @@ DH.views['detail-view'] = {
 
   <!-- 商品不存在 -->
   <div v-else class="empty card" style="margin-top:20px">
-    <div class="ico">📦</div><div>商品不存在或已下架</div>
+    <div class="ico"><ui-icon name="box" :size="34"></ui-icon></div><div>商品不存在或已下架</div>
     <button class="btn btn-primary" @click="go('/list')">去逛逛其他商品</button>
   </div>
 </div>`,

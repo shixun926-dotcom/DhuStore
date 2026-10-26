@@ -17,7 +17,7 @@ DH.views['admin-view'] = {
 <div>
   <!-- 权限校验：管理员 = role===1 -->
   <div v-if="!isAdmin" class="auth" style="margin-top:44px">
-    <div style="font-size:44px;text-align:center">⚙️</div>
+    <div style="text-align:center;color:var(--ink-3)"><ui-icon name="gear" :size="44"></ui-icon></div>
     <h2 style="margin-top:12px">后台管理</h2>
     <p class="tip">{{ store.user ? '当前账号没有后台管理权限' : '请先登录管理员账号' }}</p>
     <button v-if="store.user" class="btn btn-primary btn-block" @click="go('/')">返回首页</button>
@@ -32,7 +32,7 @@ DH.views['admin-view'] = {
     <aside class="a-side">
       <div class="brand"><img class="mark" src="/assets/img/school-logo.jpg" alt="东华大学">东华后台</div>
       <a v-for="m in menus" :key="m.k" :class="{on:tab===m.k}" @click="tab=m.k">
-        <span>{{ m.g }}</span>{{ m.t }}
+        <ui-icon :name="m.ic" :size="16"></ui-icon>{{ m.t }}
         <b v-if="m.k==='orders' && store.pending>0" class="side-badge">{{ store.pending }}</b>
       </a>
       <div class="hint">当前登录：{{ store.user ? (store.user.nickname || store.user.username) : '—' }}<br>
@@ -45,12 +45,12 @@ DH.views['admin-view'] = {
         <div class="bar">
           <span style="color:var(--ink-3);font-size:13px">统计范围</span>
           <button v-for="r in ranges" :key="r.v" class="pill" :class="{on:range===r.v}" @click="setRange(r.v)">{{ r.t }}</button>
-          <button class="btn btn-sm" style="margin-left:auto" :disabled="statLoading" @click="loadStats">🔄 刷新</button>
+          <button class="btn btn-sm" style="margin-left:auto" :disabled="statLoading" @click="loadStats"><ui-icon name="rotate" :size="15"></ui-icon> 刷新</button>
         </div>
 
         <!-- 待处理订单提醒 -->
         <div class="todo-alert">
-          <span style="font-size:20px">{{ store.pending ? '📦' : '✅' }}</span>
+          <ui-icon :name="store.pending ? 'box' : 'check'" :size="20"></ui-icon>
           <div style="flex:1;font-size:13.5px">
             <template v-if="store.pending">待处理订单：<b>{{ store.pending }}</b> 单待发货</template>
             <template v-else>当前没有待处理订单，全部订单已处理完毕</template>
@@ -60,7 +60,7 @@ DH.views['admin-view'] = {
 
         <!-- 统计接口未就绪时的降级面板 -->
         <div v-if="statUnsupported" class="notice sec">
-          <span class="g">📊</span>
+          <span class="g"><ui-icon name="chart" :size="22"></ui-icon></span>
           <div>
             <b>后端暂未提供统计接口</b>
             <p>前端已按契约实现，后端补上后本页自动生效，无需再改前端。<br>
@@ -70,7 +70,7 @@ DH.views['admin-view'] = {
         </div>
 
         <div v-else-if="statErr" class="state card">
-          <div class="ico">📡</div><div class="t">统计接口调用失败</div><div class="d">{{ statErr }}</div>
+          <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">统计接口调用失败</div><div class="d">{{ statErr }}</div>
           <div class="acts"><button class="btn btn-primary" @click="loadStats">重新加载</button></div>
         </div>
 
@@ -213,7 +213,7 @@ DH.views['admin-view'] = {
                 <div style="display:grid;gap:12px">
                   <div v-for="s in orderStatus" :key="s.k" style="display:flex;align-items:center;gap:10px">
                     <span :style="{width:'10px',height:'10px',borderRadius:'3px',background:s.color,flex:'none'}"></span>
-                    <span style="font-size:13px">{{ s.icon }} {{ s.text }}</span>
+                    <span style="font-size:13px;display:inline-flex;align-items:center;gap:5px"><ui-icon :name="s.ic" :size="14"></ui-icon>{{ s.text }}</span>
                     <span style="margin-left:auto;font-size:13px;color:var(--viz-ink2);font-variant-numeric:tabular-nums">
                       {{ money(s.n) }} 笔</span>
                     <b style="width:52px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">{{ s.p }}%</b>
@@ -260,7 +260,7 @@ DH.views['admin-view'] = {
         </div>
 
         <div v-if="goodsErr" class="state">
-          <div class="ico">📡</div><div class="t">加载失败</div><div class="d">{{ goodsErr }}</div>
+          <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">加载失败</div><div class="d">{{ goodsErr }}</div>
           <div class="acts"><button class="btn btn-primary" @click="loadGoods">重新加载</button></div>
         </div>
 
@@ -281,7 +281,7 @@ DH.views['admin-view'] = {
                 <td class="num" style="color:var(--ink-3)">{{ p.id }}</td>
                 <td>
                   <div class="thumb mini-thumb" :style="{'--h':p.hue}">
-                    <span>{{ p.emoji }}</span>
+                    <ui-icon name="box"></ui-icon>
                     <img v-if="p.mainImage" :src="p.mainImage" alt="" class="gone"
                          @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
                   </div>
@@ -327,7 +327,7 @@ DH.views['admin-view'] = {
         </div>
 
         <div v-if="aordUnsupported" class="notice" style="margin:16px 18px">
-          <span class="g">🧾</span>
+          <span class="g"><ui-icon name="receipt" :size="22"></ui-icon></span>
           <div>
             <b>后端暂未提供管理端订单列表接口</b>
             <p>前端已按契约实现，需要 <code>GET /api/admin/orders?page=1&amp;size=20&amp;status=</code>，
@@ -337,7 +337,7 @@ DH.views['admin-view'] = {
         </div>
 
         <div v-else-if="aordErr" class="state">
-          <div class="ico">📡</div><div class="t">加载失败</div><div class="d">{{ aordErr }}</div>
+          <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">加载失败</div><div class="d">{{ aordErr }}</div>
           <div class="acts"><button class="btn btn-primary" @click="loadAdminOrders">重新加载</button></div>
         </div>
 
@@ -398,7 +398,7 @@ DH.views['admin-view'] = {
         </div>
 
         <div v-if="applyErr" class="state">
-          <div class="ico">📡</div><div class="t">加载失败</div><div class="d">{{ applyErr }}</div>
+          <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">加载失败</div><div class="d">{{ applyErr }}</div>
           <div class="acts"><button class="btn btn-primary" @click="loadApplies">重新加载</button></div>
         </div>
 
@@ -443,7 +443,7 @@ DH.views['admin-view'] = {
         </div>
 
         <div v-if="catErr" class="state">
-          <div class="ico">📡</div><div class="t">分类加载失败</div><div class="d">{{ catErr }}</div>
+          <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">分类加载失败</div><div class="d">{{ catErr }}</div>
           <div class="acts"><button class="btn btn-primary" @click="loadAdminCats">重新加载</button></div>
         </div>
         <div v-else-if="catLoading" class="state"><div class="spin"></div><div class="d">正在加载分类…</div></div>
@@ -487,7 +487,7 @@ DH.views['admin-view'] = {
         </div>
 
         <div v-if="banErr" class="state">
-          <div class="ico">📡</div><div class="t">轮播图加载失败</div><div class="d">{{ banErr }}</div>
+          <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">轮播图加载失败</div><div class="d">{{ banErr }}</div>
           <div class="acts"><button class="btn btn-primary" @click="loadBanners">重新加载</button></div>
         </div>
 
@@ -542,6 +542,45 @@ DH.views['admin-view'] = {
                @change="onPickPromo">
         <input type="file" ref="bannerFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
                @change="onPickBanner">
+      </div>
+
+      <!-- ============ 限时秒杀 ============ -->
+      <div v-else-if="tab==='flash'" class="tablewrap">
+        <div class="tbl-hd">
+          <h3>限时秒杀位</h3>
+          <span class="bn-tip">最多 8 个；首页按顺序展示前 4 个。下架商品自动从前台隐藏，但仍留在这里供你替换</span>
+          <button class="btn btn-primary" style="margin-left:auto" :disabled="fsLoading"
+                  @click="openFlashPicker(null)">＋ 添加商品</button>
+        </div>
+
+        <div v-if="fsErr" class="state">
+          <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div>
+          <div class="t">秒杀位加载失败</div><div class="d">{{ fsErr }}</div>
+          <div class="acts"><button class="btn btn-primary" @click="loadFlash">重新加载</button></div>
+        </div>
+        <div v-else-if="fsLoading" class="state"><div class="spin"></div><div class="d">正在加载秒杀位…</div></div>
+
+        <div v-else class="bn-grid">
+          <div class="bn-slot" v-for="(f,i) in flashList" :key="f.slotId">
+            <div class="bn-frame fs-thumb" style="aspect-ratio:1.25/1">
+              <ui-icon name="box" :size="30"></ui-icon>
+              <img v-if="f.mainImage" :src="f.mainImage" alt="" class="gone"
+                   @load="$event.target.classList.remove('gone')"
+                   @error="$event.target.classList.add('gone')">
+              <span class="bn-idx">{{ i + 1 }}</span>
+            </div>
+            <div class="fs-nm">{{ f.name }}</div>
+            <div class="fs-meta">¥{{ money(f.price) }}　库存 {{ f.stock }}</div>
+            <div class="bn-ops">
+              <button class="btn btn-sm" :disabled="fsSaving" @click="openFlashPicker(f)">替换</button>
+              <button class="btn btn-sm btn-danger" :disabled="fsSaving" @click="askDelFlash(f)">移除</button>
+              <span class="bn-state" v-if="f.status !== 1" style="color:var(--crit)">已下架</span>
+            </div>
+          </div>
+          <div v-if="!flashList.length" class="fs-empty">
+            还没有秒杀商品，点右上角「添加商品」开始配置
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -609,7 +648,7 @@ DH.views['admin-view'] = {
           <textarea class="field" rows="3" v-model.trim="gf.detail"></textarea></div>
 
         <div class="notice" style="margin-top:16px" v-if="goodsUnsupported">
-          <span class="g">⚠️</span>
+          <span class="g"><ui-icon name="alert" :size="20"></ui-icon></span>
           <div>
             <b>后端暂未提供商品写接口</b>
             <p>契约接口：<code>POST /api/products</code>（新增）、<code>PUT /api/products/{id}</code>（修改）、
@@ -695,6 +734,58 @@ DH.views['admin-view'] = {
     </div>
   </div>
 
+  <!-- 秒杀选品弹窗 -->
+  <div class="mask" v-if="fsPick" @click.self="fsPick=null">
+    <div class="modal" style="max-width:620px">
+      <div class="modal-hd">
+        <h3>{{ fsPickTarget ? '替换秒杀商品' : '添加秒杀商品' }}</h3>
+        <button class="close" @click="fsPick=null">✕</button>
+      </div>
+      <div class="modal-bd">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input class="field" v-model.trim="fsKw" placeholder="搜索商品名称，留空显示最新 20 件在售商品"
+                 @keyup.enter="searchFlashProducts">
+          <button class="btn" :disabled="fsSearching" @click="searchFlashProducts">
+            {{ fsSearching ? '搜索中…' : '搜索' }}</button>
+        </div>
+        <div style="max-height:360px;overflow:auto">
+          <div class="fs-row" v-for="p in fsProducts" :key="p.id" @click="chooseFlashProduct(p)">
+            <div class="thumb" :style="{'--h':p.hue,'--fs':'22px',width:'46px','border-radius':'8px'}">
+              <ui-icon name="box"></ui-icon>
+              <img v-if="p.mainImage" :src="p.mainImage" alt="" class="gone"
+                   @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
+            </div>
+            <div style="flex:1;min-width:0">
+              <div class="fs-row-nm">{{ p.name }}</div>
+              <div class="fs-meta">¥{{ money(p.price) }}　库存 {{ p.stock }}</div>
+            </div>
+            <span class="btn btn-sm">选择</span>
+          </div>
+          <div v-if="!fsProducts.length && !fsSearching" class="fs-empty">没有匹配的在售商品</div>
+        </div>
+      </div>
+      <div class="modal-ft"><button class="btn" @click="fsPick=null">取消</button></div>
+    </div>
+  </div>
+
+  <!-- 秒杀移除确认 -->
+  <div class="mask" v-if="fsDel" @click.self="fsDel=null">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-hd"><h3>移除秒杀商品</h3><button class="close" @click="fsDel=null">✕</button></div>
+      <div class="modal-bd">
+        <p style="font-size:14px;line-height:1.8">
+          确定把「<b>{{ fsDel.name }}</b>」从首页限时秒杀移除吗？<br>
+          <span style="color:var(--ink-3);font-size:13px">只移除展示位，商品本身不受影响。</span>
+        </p>
+      </div>
+      <div class="modal-ft">
+        <button class="btn" @click="fsDel=null">取消</button>
+        <button class="btn btn-primary" style="background:var(--crit);border-color:var(--crit)"
+                :disabled="fsSaving" @click="doDelFlash">{{ fsSaving ? '移除中…' : '确认移除' }}</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 分类编辑弹窗 -->
   <div class="mask" v-if="cf" @click.self="cf=null">
     <div class="modal" style="max-width:470px">
@@ -759,12 +850,13 @@ DH.views['admin-view'] = {
     return {
       tab: 'dash',
       menus: [
-        { k: 'dash', g: '📊', t: '数据看板' },
-        { k: 'goods', g: '📦', t: '商品管理' },
-        { k: 'cats', g: '🗂️', t: '分类管理' },
-        { k: 'orders', g: '🧾', t: '订单管理' },
-        { k: 'apply', g: '📝', t: '发布申请' },
-        { k: 'banner', g: '🖼️', t: '首页图片' }
+        { k: 'dash', ic: 'chart', t: '数据看板' },
+        { k: 'goods', ic: 'box', t: '商品管理' },
+        { k: 'cats', ic: 'folder', t: '分类管理' },
+        { k: 'orders', ic: 'receipt', t: '订单管理' },
+        { k: 'apply', ic: 'file', t: '发布申请' },
+        { k: 'banner', ic: 'image', t: '首页图片' },
+        { k: 'flash', ic: 'bolt', t: '限时秒杀' }
       ],
       ranges: [{ v: 30, t: '近 30 天' }, { v: 90, t: '近 90 天' }, { v: 365, t: '近 12 个月' }],
       range: 30,
@@ -775,6 +867,9 @@ DH.views['admin-view'] = {
       /* 分类管理 */
       adminCats: [], catLoading: false, catErr: '', cf: null,
       catSaving: false, catUploading: false, catDel: null,
+      /* 限时秒杀位 */
+      flashList: [], fsLoading: false, fsErr: '', fsSaving: false,
+      fsPick: false, fsPickTarget: null, fsKw: '', fsProducts: [], fsSearching: false, fsDel: null,
       aorders: [], aordLoading: false, aordErr: '', aordUnsupported: false, ostatus: '',
       applies: [], applyLoading: false, applyErr: '', aStatus: '',
       /* 首页轮播 */
@@ -944,6 +1039,7 @@ DH.views['admin-view'] = {
     tab: function (v) {
       if (v === 'banner') { this.loadBanners(); this.loadPromos(); }
       if (v === 'cats') this.loadAdminCats();
+      if (v === 'flash') this.loadFlash();
     }
   },
   methods: {
@@ -1310,6 +1406,72 @@ DH.views['admin-view'] = {
         self.catSaving = false;
       }, function () {
         self.catSaving = false;
+      });
+    },
+
+    /* ---------- 限时秒杀位：GET/POST/PUT/DELETE /api/admin/flash-sale ---------- */
+    loadFlash: function () {
+      var self = this;
+      this.fsLoading = true;
+      this.fsErr = '';
+      SVC.loadAdminFlashSale().then(function (list) {
+        self.flashList = list;
+        self.fsLoading = false;
+      }, function (e) {
+        self.fsLoading = false;
+        if (e !== U.HANDLED) self.fsErr = U.errMsg(e);
+      });
+    },
+    openFlashPicker: function (target) {
+      this.fsPickTarget = target || null;
+      this.fsKw = '';
+      this.fsProducts = [];
+      this.fsPick = true;
+      this.searchFlashProducts();
+    },
+    /* 只在售商品可选；关键字为空时取最新 20 件 */
+    searchFlashProducts: function () {
+      var self = this;
+      this.fsSearching = true;
+      SVC.loadProducts({ keyword: this.fsKw || '', status: 1, page: 1, size: 20 }).then(function (d) {
+        self.fsSearching = false;
+        self.fsProducts = U.listOf(d).map(SVC.adapt);
+      }, function (e) {
+        self.fsSearching = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    chooseFlashProduct: function (p) {
+      var self = this;
+      var target = this.fsPickTarget;
+      this.fsSaving = true;
+      var req = target ? SVC.replaceFlashSale(target.slotId, p.id) : SVC.addFlashSale(p.id);
+      req.then(function () {
+        self.toast(target ? '已替换为「' + p.name + '」' : '已添加「' + p.name + '」', '✅');
+        self.fsSaving = false;
+        self.fsPick = false;
+        self.loadFlash();
+      }, function (e) {
+        self.fsSaving = false;
+        if (e === U.HANDLED) return;
+        if (e && e.code === 2014) return self.toast('该商品已在秒杀列表中', '⚠️');
+        if (e && e.code === 2015) return self.toast('秒杀位最多 8 个，请先移除一个', '⚠️');
+        self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    askDelFlash: function (f) { this.fsDel = f; },
+    doDelFlash: function () {
+      var self = this, f = this.fsDel;
+      if (!f) return;
+      this.fsSaving = true;
+      SVC.removeFlashSale(f.slotId).then(function () {
+        self.toast('已移除', '✅');
+        self.fsSaving = false;
+        self.fsDel = null;
+        self.loadFlash();
+      }, function (e) {
+        self.fsSaving = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
       });
     },
 

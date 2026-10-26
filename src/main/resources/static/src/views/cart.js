@@ -22,7 +22,7 @@ DH.views['cart-view'] = {
 
   <!-- 未登录 -->
   <div v-if="!store.user" class="state card" style="margin-top:20px">
-    <div class="ico">🔒</div>
+    <div class="ico"><ui-icon name="lock" :size="34"></ui-icon></div>
     <div class="t">请先登录</div>
     <div class="d">购物车与订单数据保存在后端，需要登录后才能查看。</div>
     <div class="acts"><button class="btn btn-primary" @click="go('/user','tab=login')">去登录</button></div>
@@ -33,7 +33,7 @@ DH.views['cart-view'] = {
   </div>
 
   <div v-else-if="err" class="state card" style="margin-top:20px">
-    <div class="ico">📡</div><div class="t">加载失败</div><div class="d">{{ err }}</div>
+    <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div><div class="t">加载失败</div><div class="d">{{ err }}</div>
     <div class="acts"><button class="btn btn-primary" @click="load">重新加载</button></div>
   </div>
 
@@ -83,7 +83,7 @@ DH.views['cart-view'] = {
   </div>
 
   <div v-else class="empty card" style="margin-top:20px">
-    <div class="ico">🛒</div>
+    <div class="ico"><ui-icon name="cart" :size="34"></ui-icon></div>
     <div>购物车还是空的</div>
     <div style="font-size:13px">快去挑选心仪的商品吧</div>
     <button class="btn btn-primary" @click="go('/list')">去逛逛</button>

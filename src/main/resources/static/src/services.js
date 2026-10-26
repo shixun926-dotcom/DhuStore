@@ -572,6 +572,57 @@ function deleteCategory(id) {
   return api('DELETE', '/admin/categories/' + id);
 }
 
+/* ------------------------------------------------- 十一、限时秒杀位 */
+
+/** 秒杀行 → 视图对象；id 用商品 id（跳详情），slotId 用秒杀位 id（后台增删改） */
+function adaptFlash(d) {
+  var meta = S().catMeta[d.categoryId] || {};
+  return {
+    slotId: d.id,
+    id: d.productId,
+    productId: d.productId,
+    sort: d.sort,
+    name: d.name || ('商品 ' + d.productId),
+    subtitle: d.subtitle || '',
+    price: Number(d.price) || 0,
+    stock: Number(d.stock) || 0,
+    sales: Number(d.sales) || 0,
+    status: d.status,
+    mainImage: d.mainImage || '',
+    hue: meta.hue === undefined ? 210 : meta.hue
+  };
+}
+
+/** 前台读取（后端只返回在售商品），结果写入 store 供首页复用 */
+function loadFlashSale() {
+  return api('GET', '/flash-sale').then(function (d) {
+    S().flashSale = U.listOf(d).map(adaptFlash);
+    return S().flashSale;
+  });
+}
+
+/** 后台读取（含已下架商品） */
+function loadAdminFlashSale() {
+  return api('GET', '/admin/flash-sale').then(function (d) {
+    return U.listOf(d).map(adaptFlash);
+  });
+}
+
+function addFlashSale(productId) {
+  return api('POST', '/admin/flash-sale', { productId: productId })
+    .then(function () { return loadFlashSale(); });
+}
+
+function replaceFlashSale(slotId, productId) {
+  return api('PUT', '/admin/flash-sale/' + slotId, { productId: productId })
+    .then(function () { return loadFlashSale(); });
+}
+
+function removeFlashSale(slotId) {
+  return api('DELETE', '/admin/flash-sale/' + slotId)
+    .then(function () { return loadFlashSale(); });
+}
+
 DH.services = {
   /* 商品与分类 */
   buildQuery: buildQuery, adapt: adapt, adaptCart: adaptCart,
@@ -602,7 +653,10 @@ DH.services = {
   /* 首页促销位与上传提示 */
   loadPromos: loadPromos, savePromos: savePromos, uploadMsg: uploadMsg,
   /* 分类管理 */
-  loadAdminCats: loadAdminCats, saveCategory: saveCategory, deleteCategory: deleteCategory
+  loadAdminCats: loadAdminCats, saveCategory: saveCategory, deleteCategory: deleteCategory,
+  /* 限时秒杀位 */
+  loadFlashSale: loadFlashSale, loadAdminFlashSale: loadAdminFlashSale,
+  addFlashSale: addFlashSale, replaceFlashSale: replaceFlashSale, removeFlashSale: removeFlashSale
 };
 
 })(window.DH);

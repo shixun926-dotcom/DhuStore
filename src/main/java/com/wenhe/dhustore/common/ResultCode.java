@@ -31,7 +31,9 @@ public enum ResultCode {
     OSS_NOT_CONFIGURED(2010, "OSS 未配置 AccessKey，请检查 application-local.properties"),
     BANNER_LIMIT(2011, "首页轮播图最多 5 张"),
     CATEGORY_NOT_EMPTY(2012, "该分类下还有商品，无法删除"),
-    CATEGORY_NAME_EXISTS(2013, "分类名称已存在");
+    CATEGORY_NAME_EXISTS(2013, "分类名称已存在"),
+    FLASH_DUPLICATE(2014, "该商品已在秒杀列表中"),
+    FLASH_LIMIT(2015, "限时秒杀最多 8 件商品");
 
     private final int code;
     private final String message;

@@ -53,7 +53,7 @@ DH.views['list-view'] = {
       </div>
 
       <div v-if="err" class="state card">
-        <div class="ico">📡</div>
+        <div class="ico"><ui-icon name="cloudOff" :size="34"></ui-icon></div>
         <div class="t">加载失败</div>
         <div class="d">{{ err }}</div>
         <div class="acts"><button class="btn btn-primary" @click="load">重新加载</button></div>
@@ -71,7 +71,7 @@ DH.views['list-view'] = {
       </div>
 
       <div class="empty card" v-else>
-        <div class="ico">🔍</div>
+        <div class="ico"><ui-icon name="search" :size="34"></ui-icon></div>
         <div>没有找到符合条件的商品</div>
         <div style="font-size:13px">试试更换关键词或清空筛选条件</div>
         <button class="btn btn-primary" @click="clearAll">清空筛选</button>
