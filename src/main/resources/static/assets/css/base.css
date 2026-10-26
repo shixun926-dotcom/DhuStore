@@ -260,10 +260,10 @@ img.avatar{display:block;object-fit:cover;background:#2f353e;}
 .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--line);
   border-top-color:var(--brand);animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:16px;}
-.skel-card{background:#fff;border-radius:var(--r);box-shadow:var(--sh-1);overflow:hidden;}
+.skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:16px;}
+.skel-card{background:#fff;border-radius:14px;box-shadow:var(--sh-1);overflow:hidden;border:1px solid var(--line-2);}
 .skel-card .ph{aspect-ratio:1/1;}
-.skel-card .ln{height:12px;margin:12px 13px;border-radius:6px;}
+.skel-card .ln{height:12px;margin:12px 14px;border-radius:6px;}
 .skel-card .ln.s{width:56%;}
 .notice{display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border-radius:var(--r);
   background:#fffbeb;border:1px solid #fde68a;color:#7a5900;}
