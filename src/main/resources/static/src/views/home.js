@@ -51,8 +51,8 @@ DH.views['home-view'] = {
     </div>
   </section>
 
-  <!-- 分类入口 -->
-  <section class="sec">
+  <!-- 分类入口：整块收进白色曲面，与上方服务承诺条同一语言 -->
+  <section class="sec sec-card">
     <div class="sec-hd">
       <div><div class="sec-title">全部分类</div>
         <div class="sec-sub">{{ store.cats.length }} 个分类 · {{ totalOnline }} 件商品在售</div></div>
@@ -66,7 +66,7 @@ DH.views['home-view'] = {
           <span class="cat-fig" :style="{ '--h': c.hue }">
             <img v-if="c.cover" :src="c.cover" :alt="c.name" loading="lazy"
                  @error="c.cover = ''">
-            <cat-icon v-else :cat="c" :size="42"></cat-icon>
+            <cat-icon v-else :cat="c" :size="38"></cat-icon>
           </span>
           <span class="cat-shade"></span>
           <span class="cat-tx">
@@ -131,8 +131,8 @@ DH.views['home-view'] = {
     </div>
   </section>
 
-  <!-- 商品列表 -->
-  <section class="sec">
+  <!-- 商品列表：同样收进白色曲面，标题与卡片带成为一个视觉单元 -->
+  <section class="sec sec-card">
     <div class="sec-hd">
       <div><div class="sec-title">为你推荐</div><div class="sec-sub">按热度与库存精选，随时可下单</div></div>
       <a class="sec-link" href="#/list" @click.prevent="go('/list')">

@@ -49,8 +49,12 @@
   isolation:isolate;background:#fff;text-decoration:none;
   transition:transform .2s,box-shadow .2s;}
 .cat:hover{transform:translateY(-3px);box-shadow:var(--sh-3);}
+/* 浅色分类卡放在白色外壳里会失去边界，用描边补一圈；outline 不参与盒模型，也不被 hover 的投影覆盖 */
+.sec-card .cat{outline:1px solid rgba(9,11,16,.06);outline-offset:-1px;}
 /* 图/兜底底板：无封面时按分类色相出柔和渐变，中心摆分类图标 */
-.cat-fig{position:absolute;inset:0;display:grid;place-items:center;padding-bottom:16px;
+/* 底部留出文字带（32px 文字 + 9px 下边距）的净空，图标在这块上方的区域居中，
+   避免卡片较矮时图标压到分类名上 */
+.cat-fig{position:absolute;inset:0;display:grid;place-items:center;padding-bottom:38px;
   background:linear-gradient(150deg,hsl(var(--h,210) 90% 95%),hsl(var(--h,210) 62% 84%));}
 /* 用绝对定位铺满：percentage 高度在 aspect-ratio 容器内不可靠，会被图片固有比例顶开 */
 .cat-fig img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
@@ -130,6 +134,8 @@
 
 /* 商品网格与卡片（首页 / 列表 / 详情推荐共用） */
 .goods{display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:14px;}
+/* 白卡放进白色外壳时补发丝边，靠投影在白底上分不出层次 */
+.sec-card .gcard{border:1px solid var(--line-2);}
 .gcard{background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--sh-1);cursor:pointer;
   transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;}
 .gcard:hover{transform:translateY(-3px);box-shadow:var(--sh-3);}
@@ -331,6 +337,8 @@
   .cat-tx small{font-size:10px;}
   .f-price{font-size:22px;}
   .flash-hd h3{font-size:17px;}
+  .sec-card{padding:15px 14px 16px;margin-top:12px;}
+  .sec-card>.sec-hd{margin-bottom:14px;padding-bottom:12px;}
   .cats{grid-template-columns:repeat(2,1fr);}
   .promos{grid-template-columns:1fr;}
   .flash-grid{grid-template-columns:1fr 1fr;}
