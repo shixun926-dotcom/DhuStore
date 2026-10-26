@@ -19,8 +19,9 @@ public class CategoryService {
     private final CategoryMapper categoryMapper;
     private final ProductMapper productMapper;
 
+    /** 前台列表：带每个分类的在售商品数，供首页分类卡展示真实数量 */
     public List<Category> list() {
-        return categoryMapper.findAll();
+        return categoryMapper.findAllWithOnlineCount();
     }
 
     /** 后台列表：带每个分类的商品数量，便于判断能否删除 */

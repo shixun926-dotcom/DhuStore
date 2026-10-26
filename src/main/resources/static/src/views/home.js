@@ -54,17 +54,17 @@ DH.views['home-view'] = {
   <!-- 分类入口 -->
   <section class="sec">
     <div class="sec-hd">
-      <div><div class="sec-title">全部分类</div><div class="sec-sub">按需选购，快速直达</div></div>
+      <div><div class="sec-title">全部分类</div>
+        <div class="sec-sub">{{ store.cats.length }} 个分类 · {{ totalOnline }} 件商品在售</div></div>
       <a class="btn btn-sm" href="#/list" @click.prevent="go('/list')">查看全部商品 →</a>
     </div>
     <div class="cats-wrap" :class="{ clip: catsNeedClip && !catsExpanded }" :style="catsWrapStyle">
       <div class="cats" ref="catsGrid" v-if="store.cats.length" :style="catsMaskStyle">
         <a class="cat" v-for="c in store.cats" :key="c.id" :href="'#/list?cat='+c.id"
            @click.prevent="go('/list?cat='+c.id)">
-          <cat-icon :cat="c" :size="52" class="cat-ic"></cat-icon>
+          <cat-icon :cat="c" :size="44" class="cat-ic"></cat-icon>
           <b>{{ c.name }}</b>
-          <small v-if="c.count">{{ c.count }} 件在售</small>
-          <small v-else>点击选购</small>
+          <small :class="{ dim: !c.onlineCount }">{{ c.onlineCount ? c.onlineCount + ' 件在售' : '暂无在售' }}</small>
         </a>
       </div>
       <div v-else class="skel" style="height:118px"></div>
@@ -95,7 +95,7 @@ DH.views['home-view'] = {
       <h3><ui-icon name="bolt" :size="17"></ui-icon> 限时秒杀</h3>
       <span class="sub">每日 10:00 / 20:00 两场 · 抢完即止</span>
       <div class="clock">
-        <span style="font-size:12px;color:#9aa0ab">距本场结束</span>
+        <span style="font-size:12px;color:var(--ink-3)">距本场结束</span>
         <i>{{ clock.h }}</i><s>:</s><i>{{ clock.m }}</i><s>:</s><i>{{ clock.s }}</i>
       </div>
     </div>
@@ -121,7 +121,7 @@ DH.views['home-view'] = {
   <!-- 商品列表 -->
   <section class="sec">
     <div class="sec-hd">
-      <div><div class="sec-title">为你推荐</div><div class="sec-sub">来自本地后端服务的在售商品</div></div>
+      <div><div class="sec-title">为你推荐</div><div class="sec-sub">按热度与库存精选，随时可下单</div></div>
       <a class="btn btn-sm" href="#/list" @click.prevent="go('/list')">更多 →</a>
     </div>
 
@@ -167,6 +167,12 @@ DH.views['home-view'] = {
         return { k: p.k, to: p.to, title: p.title, sub: p.sub, cta: p.cta,
                  bg: p.bg, ic: p.ic, image: imgs[p.k] || '' };
       });
+    },
+    /* 各分类在售数之和：分类区副标题用它给出真实规模，替代空泛文案 */
+    totalOnline: function () {
+      return (this.store.cats || []).reduce(function (n, c) {
+        return n + (Number(c.onlineCount) || 0);
+      }, 0);
     },
     /* 折叠态的容器高度：展开用完整高度，收起用「两排 + 半排」 */
     catsWrapStyle: function () {

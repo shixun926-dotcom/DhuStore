@@ -18,6 +18,13 @@
         ORDER BY c.sort ASC, c.id ASC
     </select>
 
+    <select id="findAllWithOnlineCount" resultType="Category">
+        SELECT c.id, c.name, c.parent_id, c.sort, c.icon, c.status, c.create_time, c.update_time,
+               (SELECT COUNT(*) FROM product p WHERE p.category_id = c.id AND p.status = 1) AS online_count
+        FROM category c
+        ORDER BY c.sort ASC, c.id ASC
+    </select>
+
     <select id="findById" resultType="Category">
         SELECT <include refid="cols"/>
         FROM category

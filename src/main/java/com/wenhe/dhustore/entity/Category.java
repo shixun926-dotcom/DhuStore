@@ -20,6 +20,9 @@ public class Category {
     private Integer status;
     /** 非数据库字段：该分类下的商品数量，仅后台列表使用 */
     private Integer productCount;
+
+    /** 非数据库字段：该分类下在售商品数量，供前台分类卡展示 */
+    private Integer onlineCount;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

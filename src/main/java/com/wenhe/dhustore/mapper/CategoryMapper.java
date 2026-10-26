@@ -12,6 +12,9 @@ public interface CategoryMapper {
     /** 后台用：带商品数量 */
     List<Category> findAllWithCount();
 
+    /** 前台列表：只统计在售商品数，用于首页分类卡的实数副行 */
+    List<Category> findAllWithOnlineCount();
+
     Category findById(Long id);
 
     /** 同名分类计数，用于新增/改名时的重名校验 */

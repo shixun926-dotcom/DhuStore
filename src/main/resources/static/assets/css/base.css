@@ -260,4 +260,15 @@ img.avatar{display:block;object-fit:cover;background:#2f353e;}
 @media (max-width:600px){
   .wrap{padding:0 14px;}
   .search{max-width:none;}
+  /* 窄屏页头收纳：搜索框可压缩，购物车/登录只留图标，避免整页被撑出横向滚动 */
+  .header .wrap{gap:8px;}
+  .search{min-width:0;}
+  .search input{height:36px;font-size:13px;padding-left:33px;}
+  .search .ico{left:11px;}
+  .logo{font-size:16px;gap:7px;}
+  .logo .mark{width:28px;height:28px;border-radius:8px;}
+  .hd-act{gap:2px;}
+  .hd-act .icon-btn{padding:0 7px;gap:0;}
+  /* 只隐藏文字标签，图标与角标保留，功能入口不减少 */
+  .hd-act .icon-btn>span:not(.g):not(.badge){display:none;}
 }

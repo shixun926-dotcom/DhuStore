@@ -86,7 +86,8 @@ function loadCats(force) {
       var m = DH.data.catMeta(c);
       S().catMeta[c.id] = m;
       return { id: c.id, name: c.name || ('分类 ' + c.id), icon: c.icon || '',
-               emoji: m.emoji, hue: m.hue, count: Number(c.count) || 0, productCount: Number(c.productCount) || 0 };
+               emoji: m.emoji, hue: m.hue, count: Number(c.count) || 0,
+               productCount: Number(c.productCount) || 0, onlineCount: Number(c.onlineCount) || 0 };
     });
     /* 分类拿到后，早先加载的商品重新着色 */
     (S().homeProducts || []).forEach(function (p) { if (p) adapt(p); });
