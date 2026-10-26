@@ -79,8 +79,10 @@ select.field{appearance:none;padding-right:32px;
 .lbl{display:block;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:6px;}
 .lbl .req{color:var(--brand);margin-left:2px;}
 
-.tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:4px;
-  font-size:12px;line-height:1;background:var(--line-2);color:var(--ink-3);}
+/* 标签：统一 21px 高 / 6px 圆角 / 11.5px 中等字重，避免各处以 12px 常规字重显得松散 */
+.tag{display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:6px;
+  font-size:11.5px;font-weight:500;line-height:1;letter-spacing:.1px;
+  background:var(--line-2);color:var(--ink-2);}
 .tag-brand{background:var(--brand-l);color:var(--brand);}
 .tag-ok{background:#eaf7ea;color:#0a7a0a;}
 .tag-warn{background:#fef4e2;color:#9a6600;}
@@ -132,7 +134,19 @@ select.field{appearance:none;padding-right:32px;
 .sec{margin-top:28px;}
 .sec-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px;}
 .sec-title{font-size:20px;font-weight:700;letter-spacing:-.2px;}
-.sec-sub{font-size:13px;color:var(--ink-3);margin-top:2px;}
+.sec-sub{font-size:13px;color:var(--ink-3);margin-top:3px;font-variant-numeric:tabular-nums;}
+/* 区块头部动作：白底胶囊 + 发丝边 + 轻投影，悬停转品牌色、箭头右移 2px。
+   取代原先的裸灰描边小按钮，与分类区的「展示全部」共用同一胶囊语言 */
+.sec-link{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 14px;
+  border-radius:999px;background:#fff;border:1px solid var(--line);box-shadow:var(--sh-1);
+  font-size:12.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;
+  transition:color .18s,border-color .18s,box-shadow .18s,transform .18s;}
+.sec-link .ui-ic{color:var(--ink-3);transition:color .18s,transform .18s;}
+.sec-link:hover{color:var(--brand);border-color:var(--brand-l);box-shadow:var(--sh-2);
+  transform:translateY(-1px);}
+.sec-link:hover .ui-ic{color:var(--brand);transform:translateX(2px);}
+.sec-link:active{transform:translateY(0);box-shadow:var(--sh-1);}
+.sec-link:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
 .empty{display:grid;place-items:center;gap:12px;padding:64px 20px;text-align:center;color:var(--ink-3);}
 .empty .ico{font-size:56px;line-height:1;opacity:.5;}
 .pill{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 14px;border-radius:15px;

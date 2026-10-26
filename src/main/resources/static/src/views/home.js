@@ -56,7 +56,8 @@ DH.views['home-view'] = {
     <div class="sec-hd">
       <div><div class="sec-title">全部分类</div>
         <div class="sec-sub">{{ store.cats.length }} 个分类 · {{ totalOnline }} 件商品在售</div></div>
-      <a class="btn btn-sm" href="#/list" @click.prevent="go('/list')">查看全部商品 →</a>
+      <a class="sec-link" href="#/list" @click.prevent="go('/list')">
+        查看全部商品<ui-icon name="arrowRight" :size="13"></ui-icon></a>
     </div>
     <div class="cats-wrap" :class="{ clip: catsNeedClip && !catsExpanded }" :style="catsWrapStyle">
       <div class="cats" ref="catsGrid" v-if="store.cats.length" :style="catsMaskStyle">
@@ -134,7 +135,8 @@ DH.views['home-view'] = {
   <section class="sec">
     <div class="sec-hd">
       <div><div class="sec-title">为你推荐</div><div class="sec-sub">按热度与库存精选，随时可下单</div></div>
-      <a class="btn btn-sm" href="#/list" @click.prevent="go('/list')">更多 →</a>
+      <a class="sec-link" href="#/list" @click.prevent="go('/list')">
+        更多<ui-icon name="arrowRight" :size="13"></ui-icon></a>
     </div>
 
     <div v-if="err" class="state card">
@@ -151,7 +153,7 @@ DH.views['home-view'] = {
       </div>
     </div>
 
-    <div v-else-if="store.homeProducts.length" class="goods masonry">
+    <div v-else-if="store.homeProducts.length" class="goods">
       <goods-card v-for="p in store.homeProducts" :key="p.id" :p="p"></goods-card>
     </div>
 

@@ -72,7 +72,7 @@
   transform:translateY(-50%);z-index:2;pointer-events:none;}
 .cats-more .cats-btn{pointer-events:auto;}
 .cats-foot{display:flex;justify-content:center;margin-top:16px;}
-.cats-btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 20px;border-radius:20px;
+.cats-btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 20px;border-radius:999px;
   background:#fff;border:1px solid var(--line);color:var(--brand);font-size:13px;font-weight:600;
   box-shadow:var(--sh-2);transition:box-shadow .18s,transform .18s,border-color .18s;}
 .cats-btn:hover{border-color:var(--brand);box-shadow:var(--sh-3);transform:translateY(-1px);}
@@ -130,16 +130,6 @@
 
 /* 商品网格与卡片（首页 / 列表 / 详情推荐共用） */
 .goods{display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:14px;}
-/* 推荐区瀑布流：按列填充，卡片高度随图比例变化，形成错落的浏览节奏。
-   只作用于首页（.goods.masonry），列表页与详情页推荐仍用等高栅格 */
-.goods.masonry{display:block;columns:4;column-gap:14px;}
-.goods.masonry .gcard{break-inside:avoid;-webkit-column-break-inside:avoid;
-  margin:0 0 14px;width:100%;}
-/* 三种图比例轮换（1:1 / 4:5 / 3:4），制造高度差；无图时占位底色同样撑起比例 */
-.goods.masonry .gcard:nth-child(3n+2) .thumb{aspect-ratio:4/5;}
-.goods.masonry .gcard:nth-child(3n) .thumb{aspect-ratio:3/4;}
-/* 图区变大后，无图占位图标同比放大，空卡读作“待补图”而不是留白 */
-.goods.masonry .gcard .thumb .ui-ic{width:46px;height:46px;}
 .gcard{background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--sh-1);cursor:pointer;
   transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;}
 .gcard:hover{transform:translateY(-3px);box-shadow:var(--sh-3);}
@@ -324,7 +314,6 @@
 }
 @media (max-width:900px){
   .cats{grid-template-columns:repeat(3,1fr);}
-  .goods.masonry{columns:3;}
   .f-price{font-size:24px;}
   .banner{grid-template-columns:1fr;}
   .promos{grid-template-columns:1fr 1fr;}
@@ -334,10 +323,8 @@
   .cart-item .c-price,.cart-item .c-sub,.cart-item .c-del{display:none;}
 }
 @media (max-width:600px){
-  /* 瀑布流收成两列；触屏没有 hover，加购按钮常显 */
-  .goods.masonry{columns:2;column-gap:10px;}
-  .goods.masonry .gcard{margin-bottom:10px;}
-  .goods.masonry .gcard .cart-mini{opacity:1;transform:none;}
+  /* 触屏没有 hover，加购按钮常显 */
+  .goods .gcard .cart-mini{opacity:1;transform:none;}
   .cat{border-radius:12px;}
   .cat-tx{left:9px;right:8px;bottom:7px;}
   .cat-tx b{font-size:12px;}
@@ -365,3 +352,5 @@
 
 /* 商品占位图标：尺寸跟随缩略图的 --fs 变量，替代原来的彩色 emoji */
 .thumb .ui-ic{width:calc(var(--fs,40px) * .58);height:calc(var(--fs,40px) * .58);}
+/* 商品卡图区约 200px 见方，无图占位图标按 40px 呈现，避免小图标浮在大片底色里显空 */
+.goods .gcard .thumb .ui-ic{width:40px;height:40px;}
