@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `category` (
     `name`        VARCHAR(50) NOT NULL COMMENT '分类名',
     `parent_id`   BIGINT      NOT NULL DEFAULT 0 COMMENT '父分类 id，0 表示顶级',
     `sort`        INT         NOT NULL DEFAULT 0 COMMENT '排序值',
+    `icon`        VARCHAR(500) DEFAULT NULL COMMENT '分类图标图片地址，空则前端回落内置图形',
     `status`      TINYINT     NOT NULL DEFAULT 1 COMMENT '0-禁用 1-启用',
     `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -159,3 +160,23 @@ CREATE TABLE IF NOT EXISTS `order_item` (
     PRIMARY KEY (`id`),
     KEY `idx_order` (`order_id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='订单明细表';
+
+-- 首页轮播图（管理员维护，最多 5 张；表为空时前端渲染 5 张空白占位）
+CREATE TABLE IF NOT EXISTS `banner` (
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT,
+    `image_url`   VARCHAR(500) NOT NULL COMMENT '图片地址',
+    `sort`        INT          NOT NULL DEFAULT 0 COMMENT '展示顺序，升序',
+    `status`      TINYINT      NOT NULL DEFAULT 1 COMMENT '0-停用 1-启用',
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_sort` (`sort`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='首页轮播图（最多 5 张）';
+
+-- 站点配置（键值对）：首页促销位图片等运营配置
+CREATE TABLE IF NOT EXISTS `site_setting` (
+    `setting_key`   VARCHAR(64)  NOT NULL COMMENT '配置键，如 promo_all_image',
+    `setting_value` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '配置值（图片地址等）',
+    `update_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`setting_key`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='站点配置（键值对）';

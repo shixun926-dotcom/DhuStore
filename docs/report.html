@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>DhuStore 东华购物 · 在线购物系统项目报告</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.85;
+    color: #23262d;
+  }
+  h1, h2, h3, h4 { color: #16181d; line-height: 1.4; }
+  h1.chapter {
+    font-size: 20pt; margin: 0 0 14px; padding-bottom: 10px;
+    border-bottom: 3px solid #e63946; page-break-before: always;
+  }
+  h1.chapter .no { color: #e63946; margin-right: 10px; }
+  h2 { font-size: 14pt; margin: 22px 0 10px; padding-left: 10px; border-left: 4px solid #e63946; }
+  h3 { font-size: 11.5pt; margin: 16px 0 8px; }
+  p { margin: 8px 0; text-align: justify; }
+  ul, ol { margin: 8px 0 8px 22px; padding: 0; }
+  li { margin: 4px 0; }
+  code {
+    font-family: Consolas, "Courier New", monospace; font-size: 9.5pt;
+    background: #f4f5f7; color: #c92a37; padding: 1px 5px; border-radius: 3px;
+  }
+  pre {
+    background: #23262d; color: #e8eaef; padding: 12px 14px; border-radius: 6px;
+    font-size: 8.8pt; line-height: 1.6; overflow: hidden; white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 9.3pt; page-break-inside: avoid; }
+  th { background: #f4f5f7; color: #52565f; font-weight: 600; }
+  th, td { border: 1px solid #dfe2e8; padding: 6px 9px; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  .fig { margin: 14px 0 18px; page-break-inside: avoid; text-align: center; }
+  .fig img { width: 100%; border: 1px solid #e2e5ea; border-radius: 6px; }
+  .fig .cap { font-size: 9pt; color: #6b7280; margin-top: 7px; }
+  .fig svg { width: 100%; height: auto; }
+  .note {
+    background: #fff6f7; border-left: 4px solid #e63946; padding: 10px 14px;
+    border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 9.8pt;
+  }
+  .note b { color: #c92a37; }
+  .tag {
+    display: inline-block; background: #fdecee; color: #c92a37; font-size: 8.5pt;
+    padding: 1px 8px; border-radius: 10px; margin-right: 6px;
+  }
+  .two-col { display: flex; gap: 16px; }
+  .two-col > div { flex: 1; }
+
+  /* 封面 */
+  .cover {
+    height: 258mm; page-break-after: always;
+    background: linear-gradient(145deg, #16181d 0%, #2b3038 55%, #3a2026 100%);
+    color: #fff; border-radius: 10px; padding: 34mm 22mm; position: relative; overflow: hidden;
+  }
+  .cover::after {
+    content: ""; position: absolute; right: -60mm; bottom: -70mm;
+    width: 180mm; height: 180mm; border-radius: 50%;
+    background: radial-gradient(circle, rgba(230,57,70,.38) 0%, rgba(230,57,70,0) 68%);
+  }
+  .cover .brand { display: flex; align-items: center; gap: 14px; font-size: 16pt; font-weight: 700; }
+  .cover .mark {
+    width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+    background: linear-gradient(140deg, #e63946, #ff7a5c); font-size: 20pt;
+    box-shadow: 0 8px 24px rgba(230,57,70,.45);
+  }
+  .cover h1 { font-size: 38pt; color: #fff; margin: 48mm 0 0; letter-spacing: 2px; }
+  .cover .sub { font-size: 15pt; color: #ffb3b8; margin-top: 8px; letter-spacing: 4px; }
+  .cover .desc { margin-top: 26px; color: #b9bec8; font-size: 10.5pt; line-height: 2; max-width: 120mm; }
+  .cover .meta {
+    position: absolute; left: 22mm; bottom: 26mm; font-size: 10pt; color: #cfd3da; line-height: 2.1;
+  }
+  .cover .meta b { color: #fff; font-weight: 600; }
+
+  .abstract { page-break-after: always; padding-top: 10mm; }
+  .abstract h1 { font-size: 20pt; text-align: center; letter-spacing: 6px; margin-bottom: 20px; }
+  .keywords { margin-top: 18px; font-size: 10pt; color: #52565f; }
+  .toc { page-break-after: always; padding-top: 6mm; }
+  .toc h1 { font-size: 20pt; letter-spacing: 6px; text-align: center; margin-bottom: 22px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; font-size: 11pt; }
+  .toc li { padding: 7px 0; border-bottom: 1px dashed #e2e5ea; }
+  .toc li b { display: inline-block; width: 26px; color: #e63946; }
+  .toc li span { color: #6b7280; font-size: 9.5pt; margin-left: 8px; }
+  .kpi-row { display: flex; gap: 12px; margin: 14px 0 18px; }
+  .kpi-box { flex: 1; background: #fafbfc; border: 1px solid #e2e5ea; border-radius: 8px; padding: 12px; text-align: center; }
+  .kpi-box .n { font-size: 20pt; font-weight: 800; color: #e63946; letter-spacing: -1px; }
+  .kpi-box .l { font-size: 8.8pt; color: #6b7280; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ======================= 封面 ======================= -->
+<div class="cover">
+  <div class="brand"><span class="mark">东</span> 东华购物 · DhuStore</div>
+  <h1>在线购物系统</h1>
+  <div class="sub">项 目 报 告</div>
+  <div class="desc">
+    基于 Spring Boot + MyBatis + Vue 3 的前后端分离商城系统，<br>
+    涵盖商品、购物车、订单、收货地址、用户发布商品审核与商品多图上传等完整能力。
+  </div>
+  <div class="meta">
+    项目名称：DhuStore（东华购物）<br>
+    技术架构：B/S · 前后端分离 · RESTful API<br>
+    开发时间：2026 年 10 月<br>
+    报告版本：V1.0
+  </div>
+</div>
+
+<!-- ======================= 摘要 ======================= -->
+<div class="abstract">
+  <h1>摘 要</h1>
+  <p>
+    本项目设计并实现了一个面向普通消费者的一站式在线购物系统 —— DhuStore（东华购物）。
+    系统采用前后端分离架构：后端基于 Spring Boot 4.1.1 与原生 MyBatis 构建 RESTful API，
+    使用 MySQL 进行数据持久化，通过 JWT 实现无状态身份认证；前端基于 Vue 3 与原生 JavaScript
+    模块化开发，提供商品浏览、购物车、下单结算、订单管理、个人中心与后台管理等完整交互。
+  </p>
+  <p>
+    在传统商城功能之上，系统进一步扩展了「用户发布商品」能力：普通用户可以提交商品发布申请，
+    上传 1~9 张商品图片，由管理员审核；审核通过后，系统在同一个数据库事务内完成
+    「更新申请状态 + 创建正式商品 + 复制图片关系」，保证数据一致性，并记录商品归属卖家。
+    商品图片支持阿里云 OSS 存储，未配置 OSS 时自动回退到本地磁盘，兼顾部署成本与可移植性。
+  </p>
+  <p>
+    后台管理模块提供数据看板、商品管理、订单管理与发布申请审核，帮助运营人员掌握销售趋势、
+    处理待发货订单并完成商品上架审核。系统在安全性方面做了较完整的设计，包括 BCrypt 密码加密、
+    JWT 鉴权、基于角色的接口权限控制、上传文件的类型与大小校验、UUID 重命名与路径穿越防护。
+  </p>
+  <div class="keywords">
+    <b>关键词：</b>在线购物系统；Spring Boot；MyBatis；Vue 3；JWT；商品审核；阿里云 OSS
+  </div>
+</div>
+
+<!-- ======================= 目录 ======================= -->
+<div class="toc">
+  <h1>目 录</h1>
+  <ol>
+    <li><b>1</b> 项目概述 <span>背景、目标与角色划分</span></li>
+    <li><b>2</b> 需求分析 <span>功能需求与非功能需求</span></li>
+    <li><b>3</b> 系统设计 <span>总体架构、技术选型与模块划分</span></li>
+    <li><b>4</b> 数据库设计 <span>ER 模型、数据表与状态机</span></li>
+    <li><b>5</b> 核心业务实现 <span>下单、发布审核、多图上传与鉴权</span></li>
+    <li><b>6</b> 系统界面展示 <span>前端页面实拍与说明</span></li>
+    <li><b>7</b> 接口设计 <span>统一响应、接口清单与状态码</span></li>
+    <li><b>8</b> 安全设计 <span>认证授权、文件上传与数据安全</span></li>
+    <li><b>9</b> 部署与运行 <span>环境要求、配置与启动步骤</span></li>
+    <li><b>10</b> 总结与展望 <span>项目成果、不足与后续规划</span></li>
+  </ol>
+</div>
+
+<!-- ======================= 1 项目概述 ======================= -->
+<h1 class="chapter"><span class="no">1</span>项目概述</h1>
+
+<h2>1.1 项目背景</h2>
+<p>
+  随着电子商务的普及，在线购物已成为人们日常消费的重要方式。一个完整的购物系统不仅需要
+  商品展示与交易流程，还需要处理库存、订单状态、用户身份、支付方式以及售后等业务。
+  本项目在此基础上进一步引入「用户作为卖家发布商品」的 C2C 能力，使平台从单一自营商城
+  扩展为可以容纳第三方商品的综合性商城。
+</p>
+
+<h2>1.2 建设目标</h2>
+<ul>
+  <li>构建一套结构清晰、分层明确、易于扩展的前后端分离商城系统；</li>
+  <li>完整实现「浏览 → 加购 → 结算 → 支付 → 发货 → 收货」的购物闭环；</li>
+  <li>实现用户商品发布申请与管理员审核流程，保证申请数据与正式商品数据隔离；</li>
+  <li>支持商品多图上传、预览、排序与详情页轮播展示；</li>
+  <li>提供管理员数据看板与运营工具，提升后台管理效率；</li>
+  <li>在安全层面落实密码加密、接口鉴权、文件上传校验等机制。</li>
+</ul>
+
+<h2>1.3 系统角色</h2>
+<table>
+  <thead><tr><th style="width:18%">角色</th><th>职责与权限</th></tr></thead>
+  <tbody>
+    <tr><td><b>游客</b></td><td>浏览商品分类与商品列表、搜索商品、查看商品详情。无需登录。</td></tr>
+    <tr><td><b>普通用户</b></td><td>注册登录、管理购物车与收货地址、下单与支付、取消订单、确认收货、再次购买；提交商品发布申请并查看审核结果。</td></tr>
+    <tr><td><b>管理员</b></td><td>查看数据看板、维护商品信息、管理全部订单并执行发货、审核用户提交的商品发布申请。</td></tr>
+  </tbody>
+</table>
+
+<div class="kpi-row">
+  <div class="kpi-box"><div class="n">39</div><div class="l">REST 接口</div></div>
+  <div class="kpi-box"><div class="n">10</div><div class="l">数据表</div></div>
+  <div class="kpi-box"><div class="n">7</div><div class="l">业务模块</div></div>
+  <div class="kpi-box"><div class="n">2</div><div class="l">用户角色</div></div>
+</div>
+
+<!-- ======================= 2 需求分析 ======================= -->
+<h1 class="chapter"><span class="no">2</span>需求分析</h1>
+
+<h2>2.1 功能需求</h2>
+<table>
+  <thead><tr><th style="width:16%">模块</th><th>功能点</th><th style="width:14%">使用角色</th></tr></thead>
+  <tbody>
+    <tr><td>认证与用户</td><td>注册、登录、获取当前用户、修改个人资料</td><td>全体用户</td></tr>
+    <tr><td>商品浏览</td><td>分类列表、商品分页、关键词搜索、搜索联想、商品详情与多图浏览</td><td>游客 / 用户</td></tr>
+    <tr><td>购物车</td><td>加入购物车、修改数量、勾选与全选、删除、清空选中</td><td>普通用户</td></tr>
+    <tr><td>收货地址</td><td>新增、编辑、删除、设置默认地址</td><td>普通用户</td></tr>
+    <tr><td>订单</td><td>提交订单、支付、取消、确认收货、订单列表与详情、再次购买</td><td>普通用户</td></tr>
+    <tr><td>商品发布</td><td>提交发布申请、上传多图、查看我的申请与审核结果</td><td>普通用户</td></tr>
+    <tr><td>审核管理</td><td>查看申请列表、查看详情与图片、通过或拒绝（填写原因）</td><td>管理员</td></tr>
+    <tr><td>后台运营</td><td>数据看板、商品增删改查、订单管理与发货</td><td>管理员</td></tr>
+    <tr><td>消息提醒</td><td>待发货 / 待收货角标，按页面层级切换显示位置</td><td>用户 / 管理员</td></tr>
+  </tbody>
+</table>
+
+<h2>2.2 非功能需求</h2>
+<table>
+  <thead><tr><th style="width:18%">类别</th><th>要求</th></tr></thead>
+  <tbody>
+    <tr><td>安全性</td><td>密码不可逆加密存储；接口需鉴权；管理员接口做角色校验；上传文件做格式、大小、类型与路径校验。</td></tr>
+    <tr><td>一致性</td><td>下单扣库存、取消回滚库存、审核通过创建商品均需在事务中完成，避免脏数据。</td></tr>
+    <tr><td>可用性</td><td>统一响应格式与业务错误码；前端对加载、失败、空数据均有明确状态提示。</td></tr>
+    <tr><td>可维护性</td><td>严格分层（Controller / Service / Mapper），接口与实现分离，SQL 集中于 XML。</td></tr>
+    <tr><td>可移植性</td><td>图片存储支持 OSS 与本地磁盘两种模式，通过配置切换，无需修改代码。</td></tr>
+  </tbody>
+</table>
+
+<!-- ======================= 3 系统设计 ======================= -->
+<h1 class="chapter"><span class="no">3</span>系统设计</h1>
+
+<h2>3.1 总体架构</h2>
+<p>
+  系统采用典型的三层 B/S 架构。浏览器加载 Vue 3 单页应用，前端通过 <code>fetch</code>
+  调用以 <code>/api</code> 开头的 RESTful 接口；后端在进入 Controller 之前由 JWT 拦截器
+  完成身份解析与权限校验，随后由 Service 层组织业务与事务，Mapper 层通过 XML 执行 SQL，
+  最终访问 MySQL 与阿里云 OSS。
+</p>
+
+<div class="fig">
+<svg viewBox="0 0 920 430" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#8b9099"/>
+    </marker>
+    <linearGradient id="gBrand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e63946"/><stop offset="1" stop-color="#ff7a5c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 浏览器层 -->
+  <rect x="20" y="30" width="880" height="92" rx="10" fill="#f7f8fa" stroke="#dfe2e8"/>
+  <text x="40" y="58" font-size="13" font-weight="700" fill="#52565f">浏览器 / 前端（Vue 3 单页应用）</text>
+  <rect x="44" y="70" width="150" height="36" rx="7" fill="#fff" stroke="#c9ced6"/>
+  <text x="119" y="93" font-size="11.5" text-anchor="middle" fill="#23262d">页面视图 views</text>
+  <rect x="212" y="70" width="150" height="36" rx="7" fill="#fff" stroke="#c9ced6"/>
+  <text x="287" y="93" font-size="11.5" text-anchor="middle" fill="#23262d">业务服务 services</text>
+  <rect x="380" y="70" width="150" height="36" rx="7" fill="#fff" stroke="#c9ced6"/>
+  <text x="455" y="93" font-size="11.5" text-anchor="middle" fill="#23262d">全局状态 / 路由</text>
+  <rect x="548" y="70" width="150" height="36" rx="7" fill="#fff" stroke="#c9ced6"/>
+  <text x="623" y="93" font-size="11.5" text-anchor="middle" fill="#23262d">组件 components</text>
+  <rect x="716" y="70" width="150" height="36" rx="7" fill="#fff" stroke="#c9ced6"/>
+  <text x="791" y="93" font-size="11.5" text-anchor="middle" fill="#23262d">SVG 图表 chart</text>
+
+  <!-- 通讯 -->
+  <line x1="460" y1="122" x2="460" y2="164" stroke="#8b9099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <rect x="352" y="132" width="216" height="22" rx="11" fill="#fdecee"/>
+  <text x="460" y="148" font-size="10.5" text-anchor="middle" fill="#c92a37">HTTP / JSON · Authorization: Bearer</text>
+
+  <!-- Spring Boot -->
+  <rect x="20" y="170" width="880" height="150" rx="10" fill="#fff" stroke="#e63946" stroke-width="1.6"/>
+  <text x="40" y="198" font-size="13" font-weight="700" fill="#23262d">Spring Boot 4.1.1 后端</text>
+  <text x="40" y="216" font-size="10" fill="#8b9099">Java 17 · 原生 MyBatis · JWT</text>
+
+  <rect x="44" y="230" width="160" height="66" rx="8" fill="#fff6f7" stroke="#f2c3c8"/>
+  <text x="124" y="254" font-size="11.5" font-weight="600" text-anchor="middle" fill="#c92a37">JWT 拦截器</text>
+  <text x="124" y="274" font-size="9.5" text-anchor="middle" fill="#6b7280">解析 token / 校验角色</text>
+
+  <rect x="220" y="230" width="150" height="66" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+  <text x="295" y="254" font-size="11.5" font-weight="600" text-anchor="middle">Controller</text>
+  <text x="295" y="274" font-size="9.5" text-anchor="middle" fill="#6b7280">参数校验 / 路由</text>
+
+  <rect x="386" y="230" width="150" height="66" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+  <text x="461" y="254" font-size="11.5" font-weight="600" text-anchor="middle">Service</text>
+  <text x="461" y="274" font-size="9.5" text-anchor="middle" fill="#6b7280">业务逻辑 / 事务</text>
+
+  <rect x="552" y="230" width="150" height="66" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+  <text x="627" y="254" font-size="11.5" font-weight="600" text-anchor="middle">Mapper + XML</text>
+  <text x="627" y="274" font-size="9.5" text-anchor="middle" fill="#6b7280">SQL 映射</text>
+
+  <rect x="718" y="230" width="160" height="66" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+  <text x="798" y="254" font-size="11.5" font-weight="600" text-anchor="middle">公共组件</text>
+  <text x="798" y="274" font-size="9.5" text-anchor="middle" fill="#6b7280">统一响应 / 异常 / 上传</text>
+
+  <line x1="204" y1="263" x2="220" y2="263" stroke="#8b9099" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="370" y1="263" x2="386" y2="263" stroke="#8b9099" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="536" y1="263" x2="552" y2="263" stroke="#8b9099" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+  <!-- 数据层 -->
+  <line x1="330" y1="320" x2="330" y2="362" stroke="#8b9099" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="640" y1="320" x2="640" y2="362" stroke="#8b9099" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <rect x="170" y="366" width="320" height="50" rx="9" fill="#e8f1fc" stroke="#b9d4f4"/>
+  <text x="330" y="388" font-size="12" font-weight="700" text-anchor="middle" fill="#1e5fa8">MySQL 8 · dhustore</text>
+  <text x="330" y="405" font-size="9.5" text-anchor="middle" fill="#4a7bb5">10 张业务表 · InnoDB · utf8mb4</text>
+
+  <rect x="520" y="366" width="280" height="50" rx="9" fill="#eaf7ea" stroke="#bfe3bf"/>
+  <text x="660" y="388" font-size="12" font-weight="700" text-anchor="middle" fill="#0a7a0a">阿里云 OSS</text>
+  <text x="660" y="405" font-size="9.5" text-anchor="middle" fill="#3f8a3f">商品图片 · 公共读 · product/年/月</text>
+</svg>
+<div class="cap">图 3-1 系统总体架构</div>
+</div>
+
+<h2>3.2 技术选型</h2>
+<table>
+  <thead><tr><th style="width:22%">层次</th><th style="width:30%">技术</th><th>选型理由</th></tr></thead>
+  <tbody>
+    <tr><td>后端框架</td><td>Spring Boot 4.1.1</td><td>自动配置、生态成熟，快速构建 REST 服务。</td></tr>
+    <tr><td>持久层</td><td>原生 MyBatis 3 + XML</td><td>SQL 完全可控，便于优化联表查询与批量操作。</td></tr>
+    <tr><td>数据库</td><td>MySQL 8</td><td>事务支持完善，适合订单与库存等强一致场景。</td></tr>
+    <tr><td>认证</td><td>JJWT 0.12.7</td><td>无状态 token，便于前后端分离与水平扩展。</td></tr>
+    <tr><td>密码加密</td><td>BCrypt（Spring Security Crypto）</td><td>自带盐值、可调强度，抗彩虹表攻击。</td></tr>
+    <tr><td>参数校验</td><td>Jakarta Validation</td><td>声明式校验，统一异常处理返回明确提示。</td></tr>
+    <tr><td>对象存储</td><td>阿里云 OSS SDK 3.17.4</td><td>稳定可靠，支持公共读与 CDN 加速。</td></tr>
+    <tr><td>前端</td><td>Vue 3.5 + 原生 JS 模块</td><td>轻量、无构建步骤，直接由后端托管静态资源。</td></tr>
+    <tr><td>图表</td><td>原生 SVG</td><td>无第三方库依赖，体积小、打印清晰。</td></tr>
+  </tbody>
+</table>
+
+<h2>3.3 模块划分</h2>
+<div class="fig">
+<svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg">
+  <rect x="330" y="14" width="260" height="46" rx="8" fill="url(#gBrand)"/>
+  <text x="460" y="43" font-size="14" font-weight="700" text-anchor="middle" fill="#fff">DhuStore 在线购物系统</text>
+
+  <g font-size="11" text-anchor="middle">
+    <rect x="20" y="100" width="125" height="54" rx="8" fill="#fff" stroke="#dfe2e8"/>
+    <text x="82" y="124" font-weight="600">认证与用户</text><text x="82" y="141" font-size="9" fill="#6b7280">注册 / 登录 / 资料</text>
+
+    <rect x="160" y="100" width="125" height="54" rx="8" fill="#fff" stroke="#dfe2e8"/>
+    <text x="222" y="124" font-weight="600">商品浏览</text><text x="222" y="141" font-size="9" fill="#6b7280">分类 / 搜索 / 详情</text>
+
+    <rect x="300" y="100" width="125" height="54" rx="8" fill="#fff" stroke="#dfe2e8"/>
+    <text x="362" y="124" font-weight="600">购物车</text><text x="362" y="141" font-size="9" fill="#6b7280">加购 / 勾选 / 数量</text>
+
+    <rect x="440" y="100" width="125" height="54" rx="8" fill="#fff" stroke="#dfe2e8"/>
+    <text x="502" y="124" font-weight="600">订单交易</text><text x="502" y="141" font-size="9" fill="#6b7280">下单 / 支付 / 状态</text>
+
+    <rect x="580" y="100" width="125" height="54" rx="8" fill="#fff" stroke="#dfe2e8"/>
+    <text x="642" y="124" font-weight="600">地址管理</text><text x="642" y="141" font-size="9" fill="#6b7280">增删改 / 默认</text>
+
+    <rect x="720" y="100" width="180" height="54" rx="8" fill="#fdecee" stroke="#f2c3c8"/>
+    <text x="810" y="124" font-weight="600" fill="#c92a37">商品发布与审核</text><text x="810" y="141" font-size="9" fill="#a0555c">申请 / 图片 / 审核</text>
+
+    <rect x="330" y="200" width="260" height="54" rx="8" fill="#fff" stroke="#dfe2e8"/>
+    <text x="460" y="224" font-weight="600">后台运营</text><text x="460" y="241" font-size="9" fill="#6b7280">数据看板 / 商品 / 订单 / 审核</text>
+
+    <rect x="640" y="200" width="260" height="54" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="770" y="224" font-weight="600">公共支撑</text><text x="770" y="241" font-size="9" fill="#6b7280">JWT / 统一响应 / 异常 / 文件上传</text>
+  </g>
+
+  <g stroke="#c9ced6" stroke-width="1.3" fill="none">
+    <path d="M460,60 L460,86 M82,86 L810,86 L810,100 M82,86 L82,100 M222,86 L222,100 M362,86 L362,100 M502,86 L502,100 M642,86 L642,100"/>
+    <path d="M460,86 L460,200"/>
+  </g>
+</svg>
+<div class="cap">图 3-2 系统功能模块划分</div>
+</div>
+
+<h2>3.4 后端分层结构</h2>
+<table>
+  <thead><tr><th style="width:20%">包</th><th>职责</th></tr></thead>
+  <tbody>
+    <tr><td><code>controller</code></td><td>接收 HTTP 请求、参数校验、调用 Service 并返回统一响应。</td></tr>
+    <tr><td><code>service</code></td><td>业务编排与事务控制，是唯一允许跨 Mapper 组合操作的一层。</td></tr>
+    <tr><td><code>mapper</code> + XML</td><td>数据访问接口与 SQL 映射，负责单表与联表查询。</td></tr>
+    <tr><td><code>entity / dto</code></td><td>数据库实体与请求/响应对象，隔离内外数据结构。</td></tr>
+    <tr><td><code>common</code></td><td>统一响应、业务异常、错误码、分页结果、全局异常处理。</td></tr>
+    <tr><td><code>config</code></td><td>JWT 拦截器、CORS、密码编码器、静态资源映射、示例数据初始化。</td></tr>
+    <tr><td><code>util</code></td><td>JWT 工具与当前登录用户上下文（ThreadLocal）。</td></tr>
+  </tbody>
+</table>
+
+<!-- ======================= 4 数据库设计 ======================= -->
+<h1 class="chapter"><span class="no">4</span>数据库设计</h1>
+
+<h2>4.1 实体关系</h2>
+<p>
+  系统共设计 10 张数据表。用户与购物车、地址、订单、发布申请均为一对多关系；
+  商品与商品图片为一对多；申请与申请图片为一对多。审核通过时，申请图片会被复制为商品图片，
+  从而在数据库中形成「申请数据」与「正式商品数据」的物理隔离。
+</p>
+
+<div class="fig">
+<svg viewBox="0 0 920 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="crow" markerWidth="12" markerHeight="10" refX="10" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8" fill="none" stroke="#8b9099"/>
+    </marker>
+  </defs>
+  <style>
+    .ent { fill:#fff; stroke:#c9ced6; }
+    .entt { font-size:11.5px; font-weight:700; fill:#23262d; }
+    .entf { font-size:9px; fill:#6b7280; }
+    .rel { stroke:#8b9099; fill:none; }
+  </style>
+
+  <!-- user -->
+  <rect class="ent" x="20" y="30" width="170" height="112" rx="8"/>
+  <text class="entt" x="34" y="52">user</text>
+  <text class="entf" x="34" y="70">id · username · password</text>
+  <text class="entf" x="34" y="86">nickname · phone · email</text>
+  <text class="entf" x="34" y="102">role · status</text>
+  <text class="entf" x="34" y="120" fill="#c92a37">角色：0 用户 / 1 管理员</text>
+
+  <!-- category -->
+  <rect class="ent" x="20" y="200" width="170" height="78" rx="8"/>
+  <text class="entt" x="34" y="222">category</text>
+  <text class="entf" x="34" y="240">id · name · parent_id</text>
+  <text class="entf" x="34" y="256">sort · status</text>
+
+  <!-- product -->
+  <rect class="ent" x="360" y="30" width="200" height="128" rx="8"/>
+  <text class="entt" x="374" y="52">product</text>
+  <text class="entf" x="374" y="70">id · category_id · seller_id</text>
+  <text class="entf" x="374" y="86">name · subtitle · detail</text>
+  <text class="entf" x="374" y="102">price · stock · sales</text>
+  <text class="entf" x="374" y="118">main_image · status</text>
+  <text class="entf" x="374" y="138" fill="#c92a37">seller_id 记录商品归属</text>
+
+  <!-- product_image -->
+  <rect class="ent" x="700" y="30" width="190" height="94" rx="8"/>
+  <text class="entt" x="714" y="52">product_image</text>
+  <text class="entf" x="714" y="70">id · product_id</text>
+  <text class="entf" x="714" y="86">image_url · sort</text>
+  <text class="entf" x="714" y="104" fill="#c92a37">sort = 1 即主图</text>
+
+  <!-- product_apply -->
+  <rect class="ent" x="360" y="210" width="200" height="128" rx="8" fill="#fff6f7" stroke="#f2c3c8"/>
+  <text class="entt" x="374" y="232">product_apply</text>
+  <text class="entf" x="374" y="250">id · user_id · category_id</text>
+  <text class="entf" x="374" y="266">name · price · stock</text>
+  <text class="entf" x="374" y="282">status · reject_reason</text>
+  <text class="entf" x="374" y="298">auditor_id · audit_time</text>
+  <text class="entf" x="374" y="318" fill="#c92a37">0 待审核 / 1 通过 / 2 拒绝</text>
+
+  <!-- product_apply_image -->
+  <rect class="ent" x="700" y="210" width="190" height="94" rx="8" fill="#fff6f7" stroke="#f2c3c8"/>
+  <text class="entt" x="714" y="232">product_apply_image</text>
+  <text class="entf" x="714" y="250">id · apply_id</text>
+  <text class="entf" x="714" y="266">image_url · sort</text>
+
+  <!-- cart -->
+  <rect class="ent" x="20" y="330" width="170" height="78" rx="8"/>
+  <text class="entt" x="34" y="352">cart_item</text>
+  <text class="entf" x="34" y="370">id · user_id · product_id</text>
+  <text class="entf" x="34" y="386">quantity · checked</text>
+
+  <!-- address -->
+  <rect class="ent" x="20" y="440" width="170" height="66" rx="8"/>
+  <text class="entt" x="34" y="462">address</text>
+  <text class="entf" x="34" y="480">user_id · receiver_* · detail</text>
+
+  <!-- orders -->
+  <rect class="ent" x="360" y="390" width="200" height="112" rx="8"/>
+  <text class="entt" x="374" y="412">orders</text>
+  <text class="entf" x="374" y="430">id · order_no · user_id</text>
+  <text class="entf" x="374" y="446">total_price · payment · status</text>
+  <text class="entf" x="374" y="462">receiver_* 快照 · remark</text>
+  <text class="entf" x="374" y="482" fill="#c92a37">0~4 订单状态</text>
+
+  <!-- order_item -->
+  <rect class="ent" x="700" y="390" width="190" height="92" rx="8"/>
+  <text class="entt" x="714" y="412">order_item</text>
+  <text class="entf" x="714" y="430">id · order_id · product_id</text>
+  <text class="entf" x="714" y="446">product_name · unit_price</text>
+  <text class="entf" x="714" y="462" fill="#c92a37">下单时快照，防商品变更</text>
+
+  <!-- relations -->
+  <path class="rel" marker-end="url(#crow)" d="M190,70 L360,70"/>
+  <path class="rel" marker-end="url(#crow)" d="M190,240 L360,200"/>
+  <path class="rel" marker-end="url(#crow)" d="M560,70 L700,70"/>
+  <path class="rel" marker-end="url(#crow)" d="M190,90 L330,90 L330,250 L360,250"/>
+  <path class="rel" marker-end="url(#crow)" d="M560,250 L700,250"/>
+  <path class="rel" marker-end="url(#crow)" d="M190,360 L330,360 L330,430 L360,430"/>
+  <path class="rel" marker-end="url(#crow)" d="M190,470 L330,470 L330,470 L360,470"/>
+  <path class="rel" marker-end="url(#crow)" d="M560,450 L700,450"/>
+  <path class="rel" marker-end="url(#crow)" d="M190,380 L250,380 L250,120 L280,120"/>
+
+  <g font-size="8.5" fill="#8b9099">
+    <text x="262" y="62">1 : N</text>
+    <text x="612" y="62">1 : N</text>
+    <text x="612" y="242">1 : N</text>
+    <text x="612" y="442">1 : N</text>
+  </g>
+</svg>
+<div class="cap">图 4-1 核心实体关系（ER）图</div>
+</div>
+
+<h2>4.2 数据表清单</h2>
+<table>
+  <thead><tr><th style="width:22%">表名</th><th>说明</th><th style="width:26%">关键字段</th></tr></thead>
+  <tbody>
+    <tr><td><code>user</code></td><td>用户账号与角色</td><td>username、password、role、status</td></tr>
+    <tr><td><code>category</code></td><td>商品分类（支持父子级）</td><td>name、parent_id、sort、status</td></tr>
+    <tr><td><code>product</code></td><td>正式商品</td><td>category_id、seller_id、price、stock、status</td></tr>
+    <tr><td><code>product_image</code></td><td>商品图片（1~9 张）</td><td>product_id、image_url、sort</td></tr>
+    <tr><td><code>product_apply</code></td><td>商品发布申请</td><td>user_id、status、reject_reason、auditor_id</td></tr>
+    <tr><td><code>product_apply_image</code></td><td>申请图片</td><td>apply_id、image_url、sort</td></tr>
+    <tr><td><code>address</code></td><td>收货地址</td><td>user_id、receiver_name、is_default</td></tr>
+    <tr><td><code>cart_item</code></td><td>购物车</td><td>user_id、product_id、quantity、checked</td></tr>
+    <tr><td><code>orders</code></td><td>订单主表</td><td>order_no、total_price、status、receiver_*</td></tr>
+    <tr><td><code>order_item</code></td><td>订单明细（快照）</td><td>order_id、product_name、unit_price、quantity</td></tr>
+  </tbody>
+</table>
+
+<h2>4.3 状态机设计</h2>
+<div class="two-col">
+  <div>
+    <h3>订单状态</h3>
+    <table>
+      <thead><tr><th style="width:22%">状态</th><th>含义</th><th style="width:34%">触发方</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>待付款</td><td>下单后</td></tr>
+        <tr><td>1</td><td>已付款 / 待发货</td><td>用户支付</td></tr>
+        <tr><td>2</td><td>已发货 / 待收货</td><td>管理员发货</td></tr>
+        <tr><td>3</td><td>已完成</td><td>用户确认收货</td></tr>
+        <tr><td>4</td><td>已取消</td><td>用户取消（归还库存）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>商品申请状态</h3>
+    <table>
+      <thead><tr><th style="width:22%">状态</th><th>含义</th><th style="width:34%">说明</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>待审核</td><td>用户提交后</td></tr>
+        <tr><td>1</td><td>审核通过</td><td>事务内生成正式商品</td></tr>
+        <tr><td>2</td><td>审核拒绝</td><td>需填写拒绝原因</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="note">
+  <b>设计要点：</b>订单明细保存商品名称、图片与单价快照，商品后续改价或改名不会影响历史订单；
+  商品归属通过 <code>seller_id</code> 记录，为后续「我的商品」「卖家中心」等功能预留扩展空间。
+</div>
+
+<!-- ======================= 5 核心业务实现 ======================= -->
+<h1 class="chapter"><span class="no">5</span>核心业务实现</h1>
+
+<h2>5.1 购物下单流程</h2>
+<p>
+  下单是系统中最需要保证一致性的流程。用户在购物车勾选商品后进入结算页，选择收货地址与支付方式，
+  提交订单时后端在同一个事务内依次完成：校验地址归属、读取勾选商品、逐项扣减库存并增加销量、
+  写入订单主表与明细表、清除已结算的购物车项。任一商品库存不足都会抛出业务异常并回滚整个事务。
+</p>
+
+<div class="fig">
+<svg viewBox="0 0 920 250" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#8b9099"/></marker></defs>
+  <g font-size="10.5" text-anchor="middle">
+    <rect x="14" y="70" width="130" height="64" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="79" y="96" font-weight="600">购物车勾选</text><text x="79" y="114" font-size="9" fill="#6b7280">checked = 1</text>
+
+    <rect x="176" y="70" width="130" height="64" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="241" y="96" font-weight="600">选择地址</text><text x="241" y="114" font-size="9" fill="#6b7280">校验归属当前用户</text>
+
+    <rect x="338" y="56" width="248" height="92" rx="9" fill="#fff6f7" stroke="#e63946" stroke-width="1.5"/>
+    <text x="462" y="80" font-weight="700" fill="#c92a37">@Transactional 下单事务</text>
+    <text x="462" y="100" font-size="9.5">① 扣减库存（stock &gt;= qty）</text>
+    <text x="462" y="118" font-size="9.5">② 写订单主表 + 明细快照</text>
+    <text x="462" y="136" font-size="9.5">③ 删除已结算购物车项</text>
+
+    <rect x="618" y="70" width="130" height="64" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="683" y="96" font-weight="600">订单待付款</text><text x="683" y="114" font-size="9" fill="#6b7280">status = 0</text>
+
+    <rect x="780" y="70" width="126" height="64" rx="8" fill="#eaf7ea" stroke="#bfe3bf"/>
+    <text x="843" y="96" font-weight="600" fill="#0a7a0a">支付成功</text><text x="843" y="114" font-size="9" fill="#3f8a3f">status = 1</text>
+  </g>
+  <g stroke="#8b9099" stroke-width="1.4" fill="none">
+    <line x1="144" y1="102" x2="174" y2="102" marker-end="url(#a2)"/>
+    <line x1="306" y1="102" x2="336" y2="102" marker-end="url(#a2)"/>
+    <line x1="586" y1="102" x2="616" y2="102" marker-end="url(#a2)"/>
+    <line x1="748" y1="102" x2="778" y2="102" marker-end="url(#a2)"/>
+  </g>
+  <text x="462" y="180" font-size="9.5" text-anchor="middle" fill="#8b9099">库存不足 → 抛出业务异常 2001，事务整体回滚，购物车保持不变</text>
+  <text x="462" y="206" font-size="9.5" text-anchor="middle" fill="#8b9099">取消订单（0 → 4）时在事务内归还库存并回退销量</text>
+</svg>
+<div class="cap">图 5-1 下单与订单状态流转</div>
+</div>
+
+<h2>5.2 商品发布与审核流程</h2>
+<p>
+  用户提交的商品不会直接写入正式商品表，而是先写入 <code>product_apply</code> 与
+  <code>product_apply_image</code>。管理员审核通过时，后端在同一个事务内完成三件事：
+  更新申请状态与审核信息、创建 <code>product</code> 记录（写入 <code>seller_id</code>）、
+  把申请图片复制到 <code>product_image</code>。这样既保证了「申请通过」与「商品创建」的原子性，
+  也天然实现了申请数据与正式数据的隔离。
+</p>
+
+<div class="fig">
+<svg viewBox="0 0 920 330" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#8b9099"/></marker></defs>
+  <g font-size="10.5" text-anchor="middle">
+    <rect x="20" y="30" width="150" height="58" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="95" y="54" font-weight="600">用户填写商品</text><text x="95" y="72" font-size="9" fill="#6b7280">信息 + 1~9 张图片</text>
+
+    <rect x="220" y="30" width="170" height="58" rx="8" fill="#fff6f7" stroke="#f2c3c8"/>
+    <text x="305" y="54" font-weight="600" fill="#c92a37">提交申请</text><text x="305" y="72" font-size="9" fill="#a0555c">product_apply + 图片表</text>
+
+    <rect x="440" y="30" width="150" height="58" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="515" y="54" font-weight="600">管理员审核</text><text x="515" y="72" font-size="9" fill="#6b7280">查看商品与图片</text>
+
+    <rect x="650" y="20" width="240" height="86" rx="9" fill="#eaf7ea" stroke="#bfe3bf"/>
+    <text x="770" y="42" font-weight="700" fill="#0a7a0a">通过（事务）</text>
+    <text x="770" y="60" font-size="9">① 申请 status = 1</text>
+    <text x="770" y="76" font-size="9">② 创建 product（seller_id）</text>
+    <text x="770" y="92" font-size="9">③ 复制图片到 product_image</text>
+
+    <rect x="650" y="150" width="240" height="70" rx="9" fill="#fdf3f3" stroke="#f2d4d4"/>
+    <text x="770" y="174" font-weight="600" fill="#c03b3b">拒绝</text>
+    <text x="770" y="192" font-size="9">status = 2 + 记录拒绝原因</text>
+    <text x="770" y="208" font-size="9" fill="#8b6050">申请记录保留，用户可查看</text>
+
+    <rect x="650" y="256" width="240" height="54" rx="8" fill="#e8f1fc" stroke="#b9d4f4"/>
+    <text x="770" y="278" font-weight="600" fill="#1e5fa8">商品正式上架</text>
+    <text x="770" y="295" font-size="9" fill="#4a7bb5">前台可见 · 归属 seller_id</text>
+
+    <rect x="220" y="150" width="170" height="70" rx="9" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="305" y="174" font-weight="600">我的商品申请</text>
+    <text x="305" y="192" font-size="9" fill="#6b7280">状态：待审核 / 通过 / 拒绝</text>
+    <text x="305" y="208" font-size="9" fill="#6b7280">拒绝时展示原因</text>
+  </g>
+  <g stroke="#8b9099" stroke-width="1.4" fill="none">
+    <line x1="170" y1="59" x2="218" y2="59" marker-end="url(#a3)"/>
+    <line x1="390" y1="59" x2="438" y2="59" marker-end="url(#a3)"/>
+    <path d="M590,50 L620,50 L620,48 L648,48" marker-end="url(#a3)"/>
+    <path d="M590,70 L620,70 L620,185 L648,185" marker-end="url(#a3)"/>
+    <line x1="770" y1="106" x2="770" y2="148" stroke-dasharray="4 4"/>
+    <line x1="770" y1="220" x2="770" y2="254" marker-end="url(#a3)"/>
+    <path d="M590,72 L640,72 L640,290 L648,290" stroke-dasharray="4 4"/>
+    <path d="M305,88 L305,148" marker-end="url(#a3)"/>
+  </g>
+</svg>
+<div class="cap">图 5-2 商品发布与审核流程</div>
+</div>
+
+<div class="note">
+  <b>防重复审核：</b>审核前检查申请状态，只有 <code>status = 0</code> 的申请允许操作，
+  否则返回业务码 <code>2005（该申请已审核）</code>，避免重复生成商品。
+</div>
+
+<h2>5.3 商品多图上传</h2>
+<p>
+  图片上传采用「前端预校验 + 后端强校验」的双重机制。前端在用户选择文件时立即校验数量、格式与大小，
+  并调用上传接口即时预览；后端再次校验文件大小、扩展名与 Content-Type，校验通过后使用 UUID
+  重命名并写入 OSS，返回可访问的 URL。订单、商品详情等场景只保存 URL，不保存二进制数据。
+</p>
+
+<div class="fig">
+<svg viewBox="0 0 920 210" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#8b9099"/></marker></defs>
+  <g font-size="10.5" text-anchor="middle">
+    <rect x="14" y="70" width="140" height="64" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="84" y="96" font-weight="600">选择本地图片</text><text x="84" y="114" font-size="9" fill="#6b7280">支持多选</text>
+
+    <rect x="188" y="58" width="170" height="88" rx="8" fill="#fff6f7" stroke="#f2c3c8"/>
+    <text x="273" y="82" font-weight="600" fill="#c92a37">前端预校验</text>
+    <text x="273" y="100" font-size="9">1~9 张 · ≤5MB</text>
+    <text x="273" y="116" font-size="9">JPG / PNG / WEBP</text>
+    <text x="273" y="132" font-size="9" fill="#6b7280">即时预览 + 可删除</text>
+
+    <rect x="392" y="70" width="150" height="64" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
+    <text x="467" y="96" font-weight="600">POST /upload</text><text x="467" y="114" font-size="9" fill="#6b7280">multipart/form-data</text>
+
+    <rect x="576" y="58" width="170" height="88" rx="8" fill="#fff6f7" stroke="#f2c3c8"/>
+    <text x="661" y="82" font-weight="600" fill="#c92a37">后端二次校验</text>
+    <text x="661" y="100" font-size="9">大小 / 扩展名 / Content-Type</text>
+    <text x="661" y="116" font-size="9">UUID 重命名</text>
+    <text x="661" y="132" font-size="9" fill="#6b7280">路径穿越防护</text>
+
+    <rect x="780" y="70" width="126" height="64" rx="8" fill="#eaf7ea" stroke="#bfe3bf"/>
+    <text x="843" y="96" font-weight="600" fill="#0a7a0a">OSS / 本地</text><text x="843" y="114" font-size="9" fill="#3f8a3f">返回 URL</text>
+  </g>
+  <g stroke="#8b9099" stroke-width="1.4" fill="none">
+    <line x1="154" y1="102" x2="186" y2="102" marker-end="url(#a4)"/>
+    <line x1="358" y1="102" x2="390" y2="102" marker-end="url(#a4)"/>
+    <line x1="542" y1="102" x2="574" y2="102" marker-end="url(#a4)"/>
+    <line x1="746" y1="102" x2="778" y2="102" marker-end="url(#a4)"/>
+  </g>
+</svg>
+<div class="cap">图 5-3 图片上传与校验链路</div>
+</div>
+
+<h3>存储路径规范</h3>
+<pre>product/{yyyy}/{MM}/{uuid}.{ext}
+示例：https://dhu-stroe.oss-cn-shanghai.aliyuncs.com/product/2026/10/625c6fef11b64b91b5f32f1a9905fce6.png</pre>
+
+<h2>5.4 身份认证与权限控制</h2>
+<p>
+  用户登录成功后，后端使用 HS256 算法签发 JWT，载荷包含用户 ID、用户名与角色。前端将 token
+  保存在 <code>localStorage</code>，之后所有请求通过 <code>Authorization: Bearer &lt;token&gt;</code>
+  携带。后端拦截器对 <code>/api/**</code> 统一解析 token：若接口标注 <code>@RequireLogin</code>
+  则强制要求登录；标注 <code>@RequireAdmin</code> 时额外要求角色为 1。当前用户信息通过
+  <code>ThreadLocal</code> 在请求生命周期内传递，请求结束后统一清理，避免线程复用导致的数据串扰。
+</p>
+
+<!-- ======================= 6 界面展示 ======================= -->
+<h1 class="chapter"><span class="no">6</span>系统界面展示</h1>
+<p>以下截图均来自系统实际运行页面，数据通过后端接口实时读取。</p>
+
+<div class="fig">
+  <img src="report-assets/home.png" alt="首页">
+  <div class="cap">图 6-1 商城首页：轮播、服务承诺、分类入口、限时秒杀与商品推荐</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/list.png" alt="商品列表">
+  <div class="cap">图 6-2 商品列表：左侧分类筛选、关键词搜索、分页与商品卡片</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/detail.png" alt="商品详情">
+  <div class="cap">图 6-3 商品详情：主图与缩略图切换、价格库存、数量选择、加入购物车与立即购买</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/cart.png" alt="购物车">
+  <div class="cap">图 6-4 购物车：勾选、数量调整、小计与合计、去结算</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/orders.png" alt="我的订单">
+  <div class="cap">图 6-5 我的订单：状态筛选、订单详情、付款 / 取消 / 确认收货 / 再次购买</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/publish.png" alt="申请发布商品">
+  <div class="cap">图 6-6 个人中心 · 申请发布商品：分类、价格库存、多图上传（1~9 张，首图为主图）</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/admin-dash.png" alt="后台数据看板">
+  <div class="cap">图 6-7 后台数据看板：销售额 / 订单量 / 客单价 / 新增用户 KPI 与销售趋势</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/admin-apply.png" alt="发布申请审核">
+  <div class="cap">图 6-8 后台 · 商品发布申请：状态筛选、申请信息与审核入口</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/login.png" alt="登录注册">
+  <div class="cap">图 6-9 登录 / 注册页面</div>
+</div>
+
+<!-- ======================= 7 接口设计 ======================= -->
+<h1 class="chapter"><span class="no">7</span>接口设计</h1>
+
+<h2>7.1 统一响应</h2>
+<p>所有接口 HTTP 状态码恒为 200，业务结果通过响应体中的 <code>code</code> 区分：</p>
+<pre>{
+  "code": 200,
+  "message": "操作成功",
+  "data": { ... }
+}</pre>
+<p>
+  前端在 <code>core.js</code> 中统一处理信封：<code>code = 200</code> 时取出 <code>data</code>；
+  <code>code = 401</code> 时清除会话并跳转登录；其余情况抛出包含 <code>code</code> 与
+  <code>message</code> 的对象，由视图提示。后端由 <code>GlobalExceptionHandler</code> 保证
+  业务异常、参数校验异常与系统异常都返回同一结构。
+</p>
+
+<h2>7.2 接口清单（共 39 个）</h2>
+<table>
+  <thead><tr><th style="width:9%">方法</th><th style="width:38%">路径</th><th>说明</th><th style="width:12%">权限</th></tr></thead>
+  <tbody>
+    <tr><td>POST</td><td><code>/api/auth/register</code></td><td>注册并返回 token</td><td>公开</td></tr>
+    <tr><td>POST</td><td><code>/api/auth/login</code></td><td>登录</td><td>公开</td></tr>
+    <tr><td>GET</td><td><code>/api/users/me</code></td><td>当前用户信息</td><td>登录</td></tr>
+    <tr><td>PUT</td><td><code>/api/users/me</code></td><td>修改个人资料</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/categories</code></td><td>分类列表</td><td>公开</td></tr>
+    <tr><td>GET</td><td><code>/api/categories/{id}</code></td><td>分类详情</td><td>公开</td></tr>
+    <tr><td>GET</td><td><code>/api/products</code></td><td>商品分页（分类 / 关键词 / 状态）</td><td>公开</td></tr>
+    <tr><td>GET</td><td><code>/api/products/{id}</code></td><td>商品详情（含 images）</td><td>公开</td></tr>
+    <tr><td>POST</td><td><code>/api/products</code></td><td>新增商品</td><td>管理员</td></tr>
+    <tr><td>PUT</td><td><code>/api/products/{id}</code></td><td>修改商品</td><td>管理员</td></tr>
+    <tr><td>DELETE</td><td><code>/api/products/{id}</code></td><td>删除商品</td><td>管理员</td></tr>
+    <tr><td>GET</td><td><code>/api/cart</code></td><td>购物车列表</td><td>登录</td></tr>
+    <tr><td>POST</td><td><code>/api/cart</code></td><td>加入购物车</td><td>登录</td></tr>
+    <tr><td>PUT</td><td><code>/api/cart/{id}</code></td><td>修改数量 / 勾选</td><td>登录</td></tr>
+    <tr><td>PUT</td><td><code>/api/cart/{id}/checked</code></td><td>修改勾选状态</td><td>登录</td></tr>
+    <tr><td>DELETE</td><td><code>/api/cart/{id}</code></td><td>删除购物车项</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/addresses</code></td><td>地址列表</td><td>登录</td></tr>
+    <tr><td>POST</td><td><code>/api/addresses</code></td><td>新增地址</td><td>登录</td></tr>
+    <tr><td>PUT</td><td><code>/api/addresses/{id}</code></td><td>修改地址</td><td>登录</td></tr>
+    <tr><td>DELETE</td><td><code>/api/addresses/{id}</code></td><td>删除地址</td><td>登录</td></tr>
+    <tr><td>PUT</td><td><code>/api/addresses/{id}/default</code></td><td>设为默认地址</td><td>登录</td></tr>
+    <tr><td>POST</td><td><code>/api/orders</code></td><td>提交订单</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/orders</code></td><td>我的订单</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/orders/summary</code></td><td>待付款 / 待收货数量</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/orders/{orderNo}</code></td><td>订单详情</td><td>登录</td></tr>
+    <tr><td>POST</td><td><code>/api/orders/{orderNo}/pay</code></td><td>支付（0→1）</td><td>登录</td></tr>
+    <tr><td>POST</td><td><code>/api/orders/{orderNo}/cancel</code></td><td>取消（0→4）</td><td>登录</td></tr>
+    <tr><td>POST</td><td><code>/api/orders/{orderNo}/confirm</code></td><td>确认收货（2→3）</td><td>登录</td></tr>
+    <tr><td>POST</td><td><code>/api/orders/{orderNo}/ship</code></td><td>发货（1→2）</td><td>管理员</td></tr>
+    <tr><td>POST</td><td><code>/api/product-apply</code></td><td>提交发布申请</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/product-apply/my</code></td><td>我的发布申请</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/product-apply</code></td><td>申请列表（可按状态）</td><td>管理员</td></tr>
+    <tr><td>POST</td><td><code>/api/admin/product-apply/{id}/approve</code></td><td>审核通过</td><td>管理员</td></tr>
+    <tr><td>POST</td><td><code>/api/admin/product-apply/{id}/reject</code></td><td>审核拒绝</td><td>管理员</td></tr>
+    <tr><td>POST</td><td><code>/api/common/upload</code></td><td>上传图片，返回 URL</td><td>登录</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/stats</code></td><td>数据看板统计</td><td>管理员</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/orders</code></td><td>全量订单</td><td>管理员</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/orders/pending-count</code></td><td>待发货数量</td><td>管理员</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/orders/summary</code></td><td>待付款 / 待发货摘要</td><td>管理员</td></tr>
+  </tbody>
+</table>
+
+<h2>7.3 业务状态码</h2>
+<table>
+  <thead><tr><th style="width:14%">code</th><th>含义</th><th style="width:14%">code</th><th>含义</th></tr></thead>
+  <tbody>
+    <tr><td>200</td><td>操作成功</td><td>1001</td><td>用户名已存在</td></tr>
+    <tr><td>400</td><td>参数错误</td><td>1002</td><td>用户名或密码错误</td></tr>
+    <tr><td>401</td><td>未登录 / token 过期</td><td>1003</td><td>账号已被禁用</td></tr>
+    <tr><td>403</td><td>无权限</td><td>2001</td><td>商品库存不足</td></tr>
+    <tr><td>404</td><td>资源不存在</td><td>2002</td><td>购物车为空</td></tr>
+    <tr><td>500</td><td>服务器内部错误</td><td>2003</td><td>订单不存在</td></tr>
+    <tr><td>2004</td><td>订单状态不允许该操作</td><td>2005</td><td>该申请已审核</td></tr>
+    <tr><td>2006</td><td>单张图片超过 5MB</td><td>2007</td><td>图片格式不支持</td></tr>
+    <tr><td>2008</td><td>图片数量需为 1-9 张</td><td>2009</td><td>图片上传失败</td></tr>
+    <tr><td>2010</td><td>OSS 未配置 AccessKey</td><td>—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<!-- ======================= 8 安全设计 ======================= -->
+<h1 class="chapter"><span class="no">8</span>安全设计</h1>
+
+<h2>8.1 认证与授权</h2>
+<ul>
+  <li><b>密码安全：</b>注册时使用 BCrypt 对密码加盐哈希，数据库中不保存明文；登录时使用
+      <code>matches</code> 校验，接口响应中不返回密码字段。</li>
+  <li><b>无状态认证：</b>JWT 使用 HS256 签名，密钥长度不少于 32 字节，token 默认 24 小时过期。</li>
+  <li><b>接口级权限：</b><code>@RequireLogin</code> 与 <code>@RequireAdmin</code> 由拦截器统一执行，
+      不依赖前端隐藏按钮，普通用户无法通过直接调用接口越权。</li>
+  <li><b>上下文隔离：</b>用户信息存放在 <code>ThreadLocal</code>，请求结束即清理，防止线程复用串号。</li>
+</ul>
+
+<h2>8.2 文件上传安全</h2>
+<ul>
+  <li>限制单文件 5MB、单请求 50MB（Spring Multipart 配置 + 业务校验双重限制）；</li>
+  <li>白名单校验扩展名（jpg / jpeg / png / webp）与 Content-Type，不信任前端 <code>accept</code>；</li>
+  <li>文件名完全由服务端生成（UUID），避免恶意文件名与覆盖攻击；</li>
+  <li>本地存储时校验目标路径必须位于上传根目录内，防止路径穿越；</li>
+  <li>上传接口要求登录，未登录请求返回 401。</li>
+</ul>
+
+<h2>8.3 业务与数据安全</h2>
+<ul>
+  <li><b>越权防护：</b>地址、购物车、订单的查询与修改均附带 <code>user_id</code> 条件，
+      用户只能操作自己的数据；订单查询还会校验归属。</li>
+  <li><b>库存并发：</b>扣减库存使用 <code>WHERE stock &gt;= #{quantity}</code> 的条件更新，
+      通过影响行数判断是否成功，避免超卖。</li>
+  <li><b>事务一致性：</b>下单、取消订单、审核通过均使用 <code>@Transactional</code>。</li>
+  <li><b>XSS 防护：</b>商品详情按纯文本渲染（不使用 <code>v-html</code>），避免后台录入内容注入脚本。</li>
+  <li><b>敏感配置：</b>数据库密码、JWT 密钥与 OSS AccessKey 存放于被 gitignore 的本地配置文件，
+      仓库中仅保留环境变量占位符。</li>
+</ul>
+
+<!-- ======================= 9 部署与运行 ======================= -->
+<h1 class="chapter"><span class="no">9</span>部署与运行</h1>
+
+<h2>9.1 环境要求</h2>
+<table>
+  <thead><tr><th style="width:24%">组件</th><th>版本要求</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>JDK</td><td>17 及以上</td><td>Spring Boot 4 要求 Java 17+</td></tr>
+    <tr><td>Maven</td><td>3.6+</td><td>构建与启动</td></tr>
+    <tr><td>MySQL</td><td>8.0+</td><td>字符集 utf8mb4</td></tr>
+    <tr><td>浏览器</td><td>Chrome / Edge 最新版</td><td>支持 ES6 与 Fetch API</td></tr>
+    <tr><td>阿里云 OSS</td><td>可选</td><td>未配置时自动使用本地磁盘</td></tr>
+  </tbody>
+</table>
+
+<h2>9.2 数据库初始化</h2>
+<pre># 全新数据库
+mysql -uroot -p &lt; src/main/resources/db/schema.sql
+mysql -uroot -p &lt; src/main/resources/db/data.sql
+
+# 已有旧库：按顺序执行增量迁移
+mysql -uroot -p &lt; src/main/resources/db/migration_1_product_apply.sql
+mysql -uroot -p &lt; src/main/resources/db/migration_2_product_image.sql</pre>
+
+<h2>9.3 配置项</h2>
+<table>
+  <thead><tr><th style="width:34%">配置项</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><code>spring.datasource.*</code></td><td>数据库连接，敏感值通过环境变量或本地配置注入</td></tr>
+    <tr><td><code>jwt.secret</code></td><td>JWT 签名密钥，至少 32 字节</td></tr>
+    <tr><td><code>storage.type</code></td><td><code>local</code> 或 <code>oss</code></td></tr>
+    <tr><td><code>aliyun.oss.*</code></td><td>endpoint、bucket、AccessKey 等 OSS 参数</td></tr>
+    <tr><td><code>file.upload-dir</code></td><td>本地存储目录，默认 <code>uploads</code></td></tr>
+    <tr><td><code>spring.servlet.multipart.*</code></td><td>单文件与整请求大小限制</td></tr>
+  </tbody>
+</table>
+
+<h2>9.4 启动与访问</h2>
+<pre>mvn spring-boot:run
+# 访问 http://localhost:8080</pre>
+<p>应用启动时会幂等创建两个示例账号，便于验收：</p>
+<table>
+  <thead><tr><th style="width:20%">账号</th><th style="width:20%">密码</th><th>角色</th></tr></thead>
+  <tbody>
+    <tr><td><code>admin</code></td><td><code>123456</code></td><td>管理员（role = 1）</td></tr>
+    <tr><td><code>user</code></td><td><code>123456</code></td><td>普通用户（role = 0）</td></tr>
+  </tbody>
+</table>
+
+<!-- ======================= 10 总结与展望 ======================= -->
+<h1 class="chapter"><span class="no">10</span>总结与展望</h1>
+
+<h2>10.1 项目成果</h2>
+<ul>
+  <li>完成了一个可运行、可演示的前后端分离在线购物系统，覆盖商品、购物车、订单、地址等核心交易链路；</li>
+  <li>实现了用户发布商品与管理员审核的 C2C 扩展，并通过事务与状态校验保证申请与正式商品的数据一致性；</li>
+  <li>实现了商品多图上传、预览与详情页展示，接入阿里云 OSS 并支持本地存储回退；</li>
+  <li>完成了管理员数据看板、商品管理、订单管理与发布申请审核等运营能力；</li>
+  <li>形成了统一响应、统一异常、统一鉴权的后端基础设施，后续新增模块成本较低。</li>
+</ul>
+
+<h2>10.2 存在的不足</h2>
+<ul>
+  <li>消息提醒采用登录与操作后的拉取刷新，尚未实现 WebSocket 实时推送；</li>
+  <li>商品图片排序按上传顺序，暂未支持拖拽调整；</li>
+  <li>商品与申请列表使用 <code>LIKE</code> 模糊查询，数据量增大后需要引入全文检索；</li>
+  <li>下单成功后的「支付」为模拟状态流转，尚未接入真实支付渠道；</li>
+  <li>缺少自动化测试与持续集成流程。</li>
+</ul>
+
+<h2>10.3 后续规划</h2>
+<ol>
+  <li><b>卖家中心：</b>基于 <code>seller_id</code> 提供「我的商品」「销售统计」「上下架」能力；</li>
+  <li><b>实时通知：</b>使用 WebSocket 或 SSE 推送新订单、发货、审核结果；</li>
+  <li><b>交易增强：</b>订单超时自动取消、退款流程、优惠券、运费模板；</li>
+  <li><b>性能优化：</b>引入 Redis 缓存热点商品与验证码，图片接入 CDN；</li>
+  <li><b>工程质量：</b>补充单元测试与接口测试，接入 CI 自动构建与部署；</li>
+  <li><b>运维能力：</b>接入日志聚合、监控告警与健康检查。</li>
+</ol>
+
+<div class="note" style="margin-top:26px">
+  <b>结语：</b>本项目从需求分析、数据库设计到接口实现与前端交互，完整走通了一个电商系统的核心闭环，
+  并在用户发布商品、审核事务、多图存储等环节进行了较深入的设计实践。系统结构清晰、层次分明，
+  为后续扩展为真正的多卖家商城奠定了基础。
+</div>
+
+</body>
+</html>

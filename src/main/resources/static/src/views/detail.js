@@ -33,7 +33,7 @@ DH.views['detail-view'] = {
   <template v-else-if="p">
     <div class="crumb">
       <a href="#/" @click.prevent="go('/')">首页</a><span class="sp">/</span>
-      <a :href="'#/list?cat='+p.cat" @click.prevent="go('/list?cat='+p.cat)">{{ catName(p.cat) }}</a>
+      <a :href="'#/list?cat='+p.cat" @click.prevent="go('/list?cat='+p.cat)"><cat-icon :cat="catOf(p.cat)" :size="16" plain></cat-icon>{{ catName(p.cat) }}</a>
       <span class="sp">/</span><span>{{ p.name }}</span>
     </div>
 

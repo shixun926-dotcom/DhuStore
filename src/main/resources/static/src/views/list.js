@@ -27,11 +27,11 @@ DH.views['list-view'] = {
     <aside class="side">
       <h4>商品分类</h4>
       <a href="#/list" :class="{on:!cat}" @click.prevent="setCat('')">
-        <span>🗂️</span><span>全部商品</span>
+        <cat-icon :cat="allCat" :size="20" plain></cat-icon><span>全部商品</span>
       </a>
       <a v-for="c in store.cats" :key="c.id" :href="'#/list?cat='+c.id" :class="{on:String(cat)===String(c.id)}"
          @click.prevent="setCat(c.id)">
-        <span>{{ c.emoji }}</span><span>{{ c.name }}</span>
+        <cat-icon :cat="c" :size="20" plain></cat-icon><span>{{ c.name }}</span>
         <span class="cnt" v-if="c.count">{{ c.count }}</span>
       </a>
     </aside>
@@ -92,6 +92,8 @@ DH.views['list-view'] = {
   computed: {
     cat: function () { return this.route.query.cat || ''; },
     q: function () { return this.route.query.kw || ''; },
+    /* 「全部商品」不是真实分类，用同一个图标组件套一个虚拟分类，保证与其余条目对齐 */
+    allCat: function () { return { id: 0, name: '全部商品', icon: '/assets/img/cat/all.svg', emoji: '🗂️', hue: 210 }; },
     crumb: function () { return this.q ? '搜索' : this.catName(this.cat); },
     activeChips: function () {
       var a = [];

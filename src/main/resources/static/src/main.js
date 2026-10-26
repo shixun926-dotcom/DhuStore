@@ -46,7 +46,10 @@ var MIXIN = {
     store: function () { return DH.store; },
     route: function () { return DH.store.route; },
     busy: function () { return DH.store.busy; },
-    banners: function () { return DH.data.banners; },
+    banners: function () {
+      var list = DH.store.banners;
+      return list && list.length ? list : DH.data.bannerPlaceholders();
+    },
     promises: function () { return DH.data.promises; },
     cartCount: function () {
       return DH.store.cart.reduce(function (s, i) { return s + (Number(i.quantity) || 0); }, 0);
@@ -81,6 +84,16 @@ var MIXIN = {
       }
       var m = DH.store.catMeta[id];
       return m && m.name ? m.name : '其他';
+    },
+    /* 按 id 取分类对象（含 icon/emoji/hue），供 <cat-icon> 统一渲染 */
+    catOf: function (id) {
+      if (id === '' || id === null || id === undefined) return null;
+      var cats = DH.store.cats || [];
+      for (var i = 0; i < cats.length; i++) {
+        if (String(cats[i].id) === String(id)) return cats[i];
+      }
+      var m = DH.store.catMeta[id] || {};
+      return { id: id, name: this.catName(id), icon: '', emoji: m.emoji || '🛍️', hue: m.hue === undefined ? 210 : m.hue };
     },
     /* 订单行/购物车行只有 productId，图标与主色从商品元数据里查 */
     emojiOf: function (pid) {

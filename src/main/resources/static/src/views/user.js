@@ -52,7 +52,11 @@ DH.views['user-view'] = {
   <div class="uc-lay" v-else>
     <aside>
       <div class="uc-card">
-        <div class="av">{{ (store.user.nickname || store.user.username).charAt(0) }}</div>
+        <div class="av" :class="{ img: !!store.user.avatar }">
+          <img v-if="store.user.avatar" :src="store.user.avatar"
+               :alt="store.user.nickname || store.user.username">
+          <template v-else>{{ (store.user.nickname || store.user.username).charAt(0) }}</template>
+        </div>
         <div class="nm">{{ store.user.nickname || store.user.username }}</div>
         <div class="lv">💎 {{ store.user.role===1 ? '超级管理员' : 'V2 黄金会员' }}</div>
         <div class="uc-stats">
@@ -79,6 +83,25 @@ DH.views['user-view'] = {
       <!-- 个人资料 -->
       <div class="card pad" v-if="tab==='info'">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:18px">个人资料</h3>
+
+        <!-- 头像：选图即本地预览，点「保存修改」才上传并与账号绑定 -->
+        <div class="ava-row">
+          <div class="ava-prev" :class="{ img: !!(avPreview || store.user.avatar) }">
+            <img v-if="avPreview || store.user.avatar" :src="avPreview || store.user.avatar" alt="头像预览">
+            <span v-else>{{ (store.user.nickname || store.user.username).charAt(0) }}</span>
+          </div>
+          <div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" :disabled="saving" @click="$refs.avatarFile.click()">
+                {{ (avPreview || store.user.avatar) ? '更换图片' : '上传头像' }}</button>
+              <button class="btn btn-sm btn-danger" v-if="avPreview || store.user.avatar"
+                      :disabled="saving" @click="clearAvatar">移除</button>
+            </div>
+            <div class="ava-tip">支持 JPG / PNG / WEBP，单张不超过 5MB<br>选图后立即预览，点「保存修改」后生效</div>
+          </div>
+          <input type="file" ref="avatarFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
+                 @change="onPickAvatar">
+        </div>
         <div class="frow">
           <div><label class="lbl">用户名</label><input class="field" :value="store.user.username" disabled></div>
           <div><label class="lbl">昵称</label><input class="field" v-model.trim="pf.nickname"></div>
@@ -236,6 +259,8 @@ DH.views['user-view'] = {
       submitting: false,
       tab: 'info',
       pf: { nickname: '', phone: '', email: '' },
+      /* 头像：avFile 待上传的文件，avPreview 本地预览图，avRemoved 表示本次要清除已存头像 */
+      avFile: null, avPreview: '', avRemoved: false,
       profileUnsupported: false,
       showAddr: false, editing: false, saving: false, af: U.blankAddr(), _editId: null,
       af2: { name: '', categoryId: '', price: null, stock: null, description: '', images: [] },
@@ -270,6 +295,10 @@ DH.views['user-view'] = {
       this.pf.nickname = u.nickname || '';
       this.pf.phone = u.phone || '';
       this.pf.email = u.email || '';
+      /* 头像以服务端值为准：切换账号或保存成功后清掉本地待提交状态 */
+      this.avFile = null;
+      this.avPreview = '';
+      this.avRemoved = false;
       SVC.loadCats().catch(function () {});
       SVC.loadAddresses().catch(function () {});
       SVC.loadCart().catch(function () {});
@@ -301,29 +330,64 @@ DH.views['user-view'] = {
         if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
       });
     },
-    /* 资料修改：契约接口 PUT /api/users/me，后端未实现时给出说明 */
+    /* 资料修改：选过新头像则先上传拿 URL，再连同昵称/联系方式一起提交 */
     saveInfo: function () {
       var self = this;
       this.saving = true;
       this.profileUnsupported = false;
-      DH.api.request('PUT', '/users/me', {
-        nickname: this.pf.nickname || null,
-        phone: this.pf.phone || null,
-        email: this.pf.email || null
+      var step = this.avFile ? SVC.uploadImage(this.avFile) : Promise.resolve(null);
+      step.then(function (uploaded) {
+        var body = {
+          nickname: self.pf.nickname || null,
+          phone: self.pf.phone || null,
+          email: self.pf.email || null
+        };
+        /* 上传成功用新地址；本次点了移除则传空串清除；否则不传，后端保持原值 */
+        if (uploaded) body.avatar = uploaded;
+        else if (self.avRemoved) body.avatar = '';
+        return DH.api.request('PUT', '/users/me', body);
       }).then(function (u) {
         if (u) { self.store.user = u; U.LS.set('dh_user', u); }
+        self.avFile = null; self.avPreview = ''; self.avRemoved = false;
         self.toast('资料已保存', '✅');
         self.saving = false;
       }, function (e) {
         self.saving = false;
         if (e === U.HANDLED) return;
-        if (U.isUnsupported(e)) {
+        /* 上传类错误（本地校验 -2 / 过大 2006 / 格式 2007 / 失败 2009 / 未配置 2010）单独给文案 */
+        var UPLOAD_CODES = { '-2': 1, 2006: 1, 2007: 1, 2009: 1, 2010: 1 };
+        if (e && UPLOAD_CODES[e.code]) {
+          self.toast(SVC.uploadMsg(e), '⚠️');
+        } else if (U.isUnsupported(e)) {
           self.profileUnsupported = true;
           self.toast('后端暂未提供资料修改接口', '⚠️');
         } else {
           self.toast(U.errMsg(e), '⚠️');
         }
       });
+    },
+    /* 选择本地头像：先按格式/大小校验，再读成 DataURL 做即时预览，不上传 */
+    onPickAvatar: function (e) {
+      var self = this;
+      var file = (e.target.files || [])[0];
+      e.target.value = '';
+      if (!file) return;
+      var err = SVC.checkImage(file);
+      if (err) return this.toast(err, '⚠️');
+      var reader = new FileReader();
+      reader.onload = function () {
+        self.avFile = file;
+        self.avPreview = reader.result;
+        self.avRemoved = false;
+      };
+      reader.onerror = function () { self.toast('图片读取失败，请换一张重试', '⚠️'); };
+      reader.readAsDataURL(file);
+    },
+    /* 移除头像：清预览并标记，保存时提交空串 */
+    clearAvatar: function () {
+      this.avFile = null;
+      this.avPreview = '';
+      this.avRemoved = true;
     },
     openAddr: function (a) {
       this.editing = !!a;

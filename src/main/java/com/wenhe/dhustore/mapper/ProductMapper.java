@@ -15,6 +15,9 @@ public interface ProductMapper {
                            @Param("offset") int offset,
                            @Param("size") int size);
 
+    /** 统计某分类下的商品数量（含下架），用于分类删除前的占用校验 */
+    long countByCategory(@Param("categoryId") Long categoryId);
+
     long countList(@Param("categoryId") Long categoryId, @Param("keyword") String keyword, @Param("status") Integer status);
 
     int insert(Product product);

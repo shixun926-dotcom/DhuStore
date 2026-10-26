@@ -15,16 +15,12 @@ DH.views['home-view'] = {
   <!-- 轮播 + 促销位 -->
   <section class="banner">
     <div class="carousel" @mouseenter="stop" @mouseleave="start">
-      <div class="slide" v-for="(b,i) in banners" :key="b.id"
-           :class="{on:i===idx}" :style="{background:b.bg,color:'#fff'}">
-        <div class="txt">
-          <span class="kicker">{{ b.kicker }}</span>
-          <h2>{{ b.title }}</h2>
-          <p>{{ b.desc }}</p>
-          <button class="btn" style="background:#fff;border-color:#fff;color:#1a1d23;font-weight:600"
-                  @click="go(b.to)">{{ b.btn }} →</button>
+      <div class="slide media" v-for="(b,i) in banners" :key="b.id" :class="{on:i===idx}">
+        <img v-if="b.imageUrl" class="slide-img" :src="b.imageUrl" :alt="'首页轮播图 '+(i+1)">
+        <div v-else class="slide-ph">
+          <span>暂无轮播图</span>
+          <small>管理员可在后台「首页轮播」上传，最多 5 张</small>
         </div>
-        <div class="g">{{ b.goo }}</div>
       </div>
       <button class="car-nav prev" @click="idx=(idx+banners.length-1)%banners.length">‹</button>
       <button class="car-nav next" @click="idx=(idx+1)%banners.length">›</button>
@@ -34,21 +30,25 @@ DH.views['home-view'] = {
     </div>
 
     <div class="promos">
-      <div class="promo" style="background:linear-gradient(140deg,#2a78d6,#5aa9f5)" @click="go('/list')">
-        <b>全部商品</b><small>分类浏览，一站买齐</small>
-        <span class="go">立即查看 →</span><span class="g">🔥</span>
-      </div>
-      <div class="promo" style="background:linear-gradient(140deg,#eb6834,#ffa06b)" @click="go('/user','tab=reg')">
-        <b>新人礼包</b><small>注册即领新人优惠</small>
-        <span class="go">马上领取 →</span><span class="g">🎁</span>
+      <div class="promo" v-for="p in promos" :key="p.k" :class="{ media: !!p.image }"
+           :style="p.image ? null : { background: p.bg }"
+           role="link" tabindex="0" :aria-label="p.title"
+           @click="go(p.to)" @keyup.enter="go(p.to)">
+        <img v-if="p.image" class="promo-img" :src="p.image" :alt="p.title">
+        <template v-else>
+          <b>{{ p.title }}</b><small>{{ p.sub }}</small>
+          <span class="go">{{ p.cta }} →</span><span class="g">{{ p.emoji }}</span>
+        </template>
       </div>
     </div>
   </section>
 
   <!-- 服务承诺 -->
   <section class="promise sec">
-    <div v-for="s in promises" :key="s.t"><span class="g">{{ s.g }}</span>
-      <div><b>{{ s.t }}</b><small>{{ s.d }}</small></div></div>
+    <div v-for="s in promises" :key="s.t">
+      <span class="ic"><img :src="s.icon" :alt="s.t"></span>
+      <div class="tx"><b>{{ s.t }}</b><small>{{ s.d }}</small></div>
+    </div>
   </section>
 
   <!-- 分类入口 -->
@@ -60,7 +60,7 @@ DH.views['home-view'] = {
     <div class="cats" v-if="store.cats.length">
       <a class="cat" v-for="c in store.cats" :key="c.id" :href="'#/list?cat='+c.id"
          @click.prevent="go('/list?cat='+c.id)">
-        <div class="g" :style="{'--h':c.hue}">{{ c.emoji }}</div>
+        <cat-icon :cat="c" :size="52" class="cat-ic"></cat-icon>
         <b>{{ c.name }}</b>
         <small v-if="c.count">{{ c.count }} 件在售</small>
         <small v-else>点击选购</small>
@@ -135,6 +135,14 @@ DH.views['home-view'] = {
     return { loading: false, err: '', idx: 0, clock: { h: '00', m: '00', s: '00' }, _t: 0, _ct: 0 };
   },
   computed: {
+    /* 促销位：静态文案来自 DH.data.promos，图片来自后台配置；有图则整卡变图片，跳转不变 */
+    promos: function () {
+      var imgs = this.store.promoImages || {};
+      return DH.data.promos.map(function (p) {
+        return { k: p.k, to: p.to, title: p.title, sub: p.sub, cta: p.cta,
+                 bg: p.bg, emoji: p.emoji, image: imgs[p.k] || '' };
+      });
+    },
     /* 秒杀位取在售且有库存的前 4 件；进度 = 已售 /（已售+库存），是真实比例 */
     flashGoods: function () {
       return this.store.homeProducts.filter(function (p) { return p && p.stock > 0; }).slice(0, 4).map(function (p) {
@@ -160,6 +168,10 @@ DH.views['home-view'] = {
       this.loading = true;
       this.err = '';
       SVC.loadCats().catch(function () {});
+      /* 轮播图来自后台；请求失败时保持占位，不阻塞首页其余内容 */
+      SVC.loadBanners().catch(function () {});
+      /* 促销位图片来自后台；失败时回落到内置渐变卡片 */
+      SVC.loadPromos().catch(function () {});
       SVC.loadProducts({ page: 1, size: 16 }).then(function (d) {
         self.store.homeProducts = U.listOf(d).map(SVC.adapt);
         self.loading = false;

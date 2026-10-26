@@ -6,6 +6,7 @@ import com.wenhe.dhustore.dto.UpdateProfileRequest;
 import com.wenhe.dhustore.dto.UserVO;
 import com.wenhe.dhustore.service.UserService;
 import com.wenhe.dhustore.util.UserContext;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,7 +29,7 @@ public class UserController {
 
     @PutMapping("/me")
     @RequireLogin
-    public Result<UserVO> update(@RequestBody UpdateProfileRequest req) {
+    public Result<UserVO> update(@Valid @RequestBody UpdateProfileRequest req) {
         return Result.success(userService.updateProfile(UserContext.getUserId(), req));
     }
 }

@@ -15,11 +15,34 @@ var SVC = DH.services;
 
 DH.components = {};
 
+/* 分类图标：全站唯一的分类视觉出口。
+   有配置图片时显示图片，没有时回落到按名称匹配的内置图形；
+   尺寸与圆角由 size 决定，保证首页大卡、列表侧栏、面包屑三处视觉一致。 */
+DH.components['cat-icon'] = {
+  props: {
+    cat: { type: Object, default: null },
+    size: { type: Number, default: 22 },
+    /* plain = 不铺底色，用于窄行内（列表筛选、面包屑） */
+    plain: { type: Boolean, default: false }
+  },
+  template: `
+<span class="ci" :class="{ 'ci-img': !!icon, plain: plain }" :style="{ '--s': size + 'px', '--h': hue }">
+  <img v-if="icon" :src="icon" :alt="name">
+  <template v-else>{{ emoji }}</template>
+</span>`,
+  computed: {
+    icon: function () { return (this.cat && this.cat.icon) || ''; },
+    name: function () { return (this.cat && this.cat.name) || ''; },
+    emoji: function () { return (this.cat && this.cat.emoji) || '🛍️'; },
+    hue: function () { return this.cat && this.cat.hue !== undefined ? this.cat.hue : 210; }
+  }
+};
+
 DH.components['app-header'] = {
   template: [
     '<header class="header">',
     '  <div class="wrap">',
-    '    <a class="logo" href="#/" @click.prevent="go(\'/\')"><span class="mark">东</span>东华<em>购物</em></a>',
+    '    <a class="logo" href="#/" @click.prevent="go(\'/\')"><img class="mark" src="/assets/img/school-logo.jpg" alt="东华大学">东华<em>购物</em></a>',
 
     '    <nav class="nav">',
     '      <a v-for="n in navs" :key="n.p" :class="{on:route.name===n.n}" :href="\'#\'+n.p"',
@@ -148,7 +171,7 @@ DH.components['app-footer'] = {
     '  <div class="wrap">',
     '    <div class="cols">',
     '      <div>',
-    '        <div class="logo" style="color:#fff;margin-bottom:12px"><span class="mark">东</span>东华购物</div>',
+    '        <div class="logo" style="color:#fff;margin-bottom:12px"><img class="mark" src="/assets/img/school-logo.jpg" alt="东华大学">东华购物</div>',
     '        <p style="line-height:1.8;max-width:300px">东华购物 · 一站式品质生活商城。正品保障、极速配送，让每一次下单都省心。</p>',
     '        <p style="margin-top:14px;font-size:24px;font-weight:800;color:#fff;letter-spacing:-.5px">400-800-9527</p>',
     '        <p style="font-size:12px">客服热线 7×24 小时</p>',

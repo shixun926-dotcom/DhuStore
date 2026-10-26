@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.SiteSettingMapper">
+
+    <select id="findAll" resultType="SiteSetting">
+        SELECT setting_key, setting_value, update_time
+        FROM site_setting
+    </select>
+
+    <select id="findByKey" resultType="SiteSetting">
+        SELECT setting_key, setting_value, update_time
+        FROM site_setting
+        WHERE setting_key = #{key}
+    </select>
+
+    <insert id="upsert">
+        INSERT INTO site_setting (setting_key, setting_value)
+        VALUES (#{key}, #{value})
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), update_time = CURRENT_TIMESTAMP
+    </insert>
+
+</mapper>

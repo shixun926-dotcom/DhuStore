@@ -30,7 +30,7 @@ DH.views['admin-view'] = {
 
   <div class="admin" v-else>
     <aside class="a-side">
-      <div class="brand"><span class="mark">东</span>东华后台</div>
+      <div class="brand"><img class="mark" src="/assets/img/school-logo.jpg" alt="东华大学">东华后台</div>
       <a v-for="m in menus" :key="m.k" :class="{on:tab===m.k}" @click="tab=m.k">
         <span>{{ m.g }}</span>{{ m.t }}
         <b v-if="m.k==='orders' && store.pending>0" class="side-badge">{{ store.pending }}</b>
@@ -385,7 +385,7 @@ DH.views['admin-view'] = {
       </div>
 
       <!-- ============ 商品发布申请 ============ -->
-      <div v-else class="tablewrap">
+      <div v-else-if="tab==='apply'" class="tablewrap">
         <div class="tbl-hd">
           <h3>商品发布申请</h3>
           <select class="field" style="width:150px" v-model="aStatus" @change="loadApplies">
@@ -432,6 +432,116 @@ DH.views['admin-view'] = {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- ============ 分类管理 ============ -->
+      <div v-else-if="tab==='cats'" class="tablewrap">
+        <div class="tbl-hd">
+          <h3>分类管理</h3>
+          <span class="bn-tip">图标用于首页分类卡、列表侧栏与详情面包屑；删除前会校验分类下是否还有商品</span>
+          <button class="btn btn-primary" style="margin-left:auto" @click="openCat()">＋ 新增分类</button>
+        </div>
+
+        <div v-if="catErr" class="state">
+          <div class="ico">📡</div><div class="t">分类加载失败</div><div class="d">{{ catErr }}</div>
+          <div class="acts"><button class="btn btn-primary" @click="loadAdminCats">重新加载</button></div>
+        </div>
+        <div v-else-if="catLoading" class="state"><div class="spin"></div><div class="d">正在加载分类…</div></div>
+
+        <div v-else style="overflow:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:80px">图标</th><th>分类名称</th>
+                <th style="width:100px">商品数</th><th style="width:80px">排序</th>
+                <th style="width:90px">状态</th><th style="width:150px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in adminCats" :key="c.id">
+                <td><cat-icon :cat="c" :size="34"></cat-icon></td>
+                <td style="font-weight:500">{{ c.name }}</td>
+                <td class="num">{{ c.productCount || 0 }}</td>
+                <td class="num">{{ c.sort }}</td>
+                <td><span class="tag">{{ c.status === 0 ? '停用' : '启用' }}</span></td>
+                <td>
+                  <button class="btn btn-sm" @click="openCat(c)">编辑</button>
+                  <button class="btn btn-sm btn-danger" style="margin-left:6px" @click="askDelCat(c)">删除</button>
+                </td>
+              </tr>
+              <tr v-if="!adminCats.length">
+                <td colspan="6" style="text-align:center;padding:40px;color:var(--ink-3)">暂无分类</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ 首页轮播 ============ -->
+      <div v-else-if="tab==='banner'" class="tablewrap">
+        <div class="tbl-hd">
+          <h3>轮播图</h3>
+          <span class="bn-tip">最多 5 张，按上传顺序轮播；建议 1200×640（约 1.9:1），单张 ≤ 5MB</span>
+          <button class="btn" style="margin-left:auto" :disabled="banLoading" @click="loadBanners">
+            {{ banLoading ? '加载中…' : '刷新' }}</button>
+        </div>
+
+        <div v-if="banErr" class="state">
+          <div class="ico">📡</div><div class="t">轮播图加载失败</div><div class="d">{{ banErr }}</div>
+          <div class="acts"><button class="btn btn-primary" @click="loadBanners">重新加载</button></div>
+        </div>
+
+        <div v-else class="bn-grid">
+          <div class="bn-slot" v-for="(s,i) in bannerSlots" :key="i">
+            <div class="bn-frame" :class="{ empty:!s.imageUrl }" @click="pickBanner(i)">
+              <img v-if="s.imageUrl" :src="s.imageUrl" :alt="'轮播图 '+(i+1)">
+              <div v-else class="bn-empty">
+                <span class="plus">＋</span>
+                <small>第 {{ i+1 }} 张 · 点击上传</small>
+              </div>
+              <span class="bn-idx">{{ i+1 }}</span>
+            </div>
+            <div class="bn-ops">
+              <button class="btn btn-sm" :disabled="banUploading" @click="pickBanner(i)">
+                {{ s.imageUrl ? '替换' : '上传' }}</button>
+              <button class="btn btn-sm btn-danger" v-if="s.id" :disabled="banUploading"
+                      @click="askDelBanner(s)">删除</button>
+              <span class="bn-state" v-if="banUploading && banSlot===i">处理中…</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tbl-hd" style="border-top:1px solid var(--line);margin-top:6px;padding-top:16px">
+          <h3>促销位图片</h3>
+          <span class="bn-tip">「全部商品」→ 列表页，「新人礼包」→ 注册页；未配置时沿用原渐变卡片</span>
+          <button class="btn btn-primary" style="margin-left:auto"
+                  :disabled="!promoDirty || !!promoUploading" @click="savePromoSettings">
+            {{ promoUploading === 'save' ? '保存中…' : '保存' }}</button>
+        </div>
+
+        <div class="bn-grid">
+          <div class="bn-slot" v-for="p in promoSlots" :key="p.k">
+            <div class="bn-frame" :class="{ empty:!p.image }" @click="pickPromo(p.k)">
+              <img v-if="p.image" :src="p.image" :alt="p.title">
+              <div v-else class="bn-empty">
+                <span class="plus">＋</span><small>{{ p.title }} · 点击上传</small>
+              </div>
+              <span class="bn-idx">{{ p.title }}</span>
+            </div>
+            <div class="bn-ops">
+              <button class="btn btn-sm" :disabled="!!promoUploading" @click="pickPromo(p.k)">
+                {{ p.image ? '替换' : '上传' }}</button>
+              <button class="btn btn-sm btn-danger" v-if="p.image" :disabled="!!promoUploading"
+                      @click="clearPromo(p.k)">移除</button>
+              <span class="bn-state">{{ p.to }}</span>
+            </div>
+          </div>
+        </div>
+
+        <input type="file" ref="promoFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
+               @change="onPickPromo">
+        <input type="file" ref="bannerFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
+               @change="onPickBanner">
       </div>
     </div>
   </div>
@@ -566,6 +676,83 @@ DH.views['admin-view'] = {
       </div>
     </div>
   </div>
+
+  <!-- 轮播图删除确认 -->
+  <div class="mask" v-if="banDel" @click.self="banDel=null">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-hd"><h3>确认删除轮播图</h3>
+        <button class="close" @click="banDel=null">✕</button></div>
+      <div class="modal-bd">
+        <p style="font-size:14px;line-height:1.8">
+          删除后该张图片不再出现在首页轮播中，剩余图片依次前移，此操作不可撤销。
+        </p>
+      </div>
+      <div class="modal-ft">
+        <button class="btn" @click="banDel=null">取消</button>
+        <button class="btn btn-primary" style="background:var(--crit);border-color:var(--crit)"
+                :disabled="banUploading" @click="doDelBanner">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分类编辑弹窗 -->
+  <div class="mask" v-if="cf" @click.self="cf=null">
+    <div class="modal" style="max-width:470px">
+      <div class="modal-hd"><h3>{{ cf.id ? '编辑分类 #' + cf.id : '新增分类' }}</h3>
+        <button class="close" @click="cf=null">✕</button></div>
+      <div class="modal-bd">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+          <cat-icon :cat="{ icon: cf.icon, name: cf.name, emoji: '🛍️', hue: 210 }" :size="64"></cat-icon>
+          <div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" :disabled="catUploading" @click="$refs.catIconFile.click()">
+                {{ cf.icon ? '更换图标' : '上传图标' }}</button>
+              <button class="btn btn-sm btn-danger" v-if="cf.icon" :disabled="catUploading"
+                      @click="cf.icon=''">移除</button>
+            </div>
+            <div class="ava-tip">建议正方形、透明底的 PNG / SVG<br>首页展示为 52×52，列表与面包屑按比例缩小</div>
+          </div>
+          <input type="file" ref="catIconFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
+                 @change="onPickCatIcon">
+        </div>
+        <label class="lbl">分类名称<span class="req">*</span></label>
+        <input class="field" v-model.trim="cf.name" placeholder="如：手机数码">
+        <div class="frow" style="margin-top:14px">
+          <div><label class="lbl">排序（小的在前）</label>
+            <input class="field" type="number" v-model.number="cf.sort"></div>
+          <div><label class="lbl">状态</label>
+            <select class="field" v-model.number="cf.status">
+              <option :value="1">启用</option><option :value="0">停用</option>
+            </select></div>
+        </div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn" @click="cf=null">取消</button>
+        <button class="btn btn-primary" :disabled="catSaving" @click="saveCat">
+          {{ catSaving ? '保存中…' : '保存' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分类删除确认 -->
+  <div class="mask" v-if="catDel" @click.self="catDel=null">
+    <div class="modal" style="max-width:430px">
+      <div class="modal-hd"><h3>确认删除分类</h3>
+        <button class="close" @click="catDel=null">✕</button></div>
+      <div class="modal-bd">
+        <p style="font-size:14px;line-height:1.8">
+          确定删除分类「<b>{{ catDel.name }}</b>」吗？<br>
+          <span style="color:var(--ink-3);font-size:13px">
+            该分类下还有 <b>{{ catDel.productCount || 0 }}</b> 件商品；只有为 0 时才能删除，此操作不可撤销。</span>
+        </p>
+      </div>
+      <div class="modal-ft">
+        <button class="btn" @click="catDel=null">取消</button>
+        <button class="btn btn-primary" style="background:var(--crit);border-color:var(--crit)"
+                :disabled="catSaving" @click="doDelCat">{{ catSaving ? '删除中…' : '确认删除' }}</button>
+      </div>
+    </div>
+  </div>
 </div>`,
 
   data: function () {
@@ -574,8 +761,10 @@ DH.views['admin-view'] = {
       menus: [
         { k: 'dash', g: '📊', t: '数据看板' },
         { k: 'goods', g: '📦', t: '商品管理' },
+        { k: 'cats', g: '🗂️', t: '分类管理' },
         { k: 'orders', g: '🧾', t: '订单管理' },
-        { k: 'apply', g: '📝', t: '发布申请' }
+        { k: 'apply', g: '📝', t: '发布申请' },
+        { k: 'banner', g: '🖼️', t: '首页图片' }
       ],
       ranges: [{ v: 30, t: '近 30 天' }, { v: 90, t: '近 90 天' }, { v: 365, t: '近 12 个月' }],
       range: 30,
@@ -583,14 +772,43 @@ DH.views['admin-view'] = {
       showTrendTable: false, hover: -1,
       goods: [], goodsLoading: false, goodsErr: '', goodsTotal: 0, pq: '', pcat: '',
       gf: null, delTarget: null, saving: false, goodsUnsupported: false,
+      /* 分类管理 */
+      adminCats: [], catLoading: false, catErr: '', cf: null,
+      catSaving: false, catUploading: false, catDel: null,
       aorders: [], aordLoading: false, aordErr: '', aordUnsupported: false, ostatus: '',
       applies: [], applyLoading: false, applyErr: '', aStatus: '',
+      /* 首页轮播 */
+      banners: [], banLoading: false, banErr: '', banUploading: false, banSlot: 0, banDel: null,
+      /* 首页促销位：saved 为已保存值，draft 为编辑中的值，点保存才落库 */
+      promoSaved: { all: '', newUser: '' }, promoDraft: { all: '', newUser: '' },
+      promoUploading: '', promoSlot: '',
       audit: null, rejecting: false, rejectReason: ''
     };
   },
   computed: {
     /* 管理员 = role 1 */
     isAdmin: function () { return !!(this.store.user && Number(this.store.user.role) === 1); },
+
+    /* 首页轮播固定 5 个槽位：已有图按顺序填充，不足补空槽，与前台占位数一致 */
+    bannerSlots: function () {
+      var list = this.banners.slice(0, 5);
+      for (var i = list.length; i < 5; i++) {
+        list.push({ id: null, imageUrl: '', placeholder: true });
+      }
+      return list;
+    },
+
+    /* 促销位：两个固定槽位，图片取编辑中的草稿值 */
+    promoSlots: function () {
+      var draft = this.promoDraft || {};
+      return DH.data.promos.map(function (p) {
+        return { k: p.k, title: p.title, to: p.to, image: draft[p.k] || '' };
+      });
+    },
+    promoDirty: function () {
+      return this.promoDraft.all !== this.promoSaved.all
+        || this.promoDraft.newUser !== this.promoSaved.newUser;
+    },
     P: function () { return CH.GEOM; },
 
     /* KPI 卡片；spark 是 12 点迷你折线，delta 直接来自后端不再前端推算 */
@@ -721,6 +939,13 @@ DH.views['admin-view'] = {
     isAdmin: function (v) { if (v) { this.loadStats(); SVC.loadPending(); } }
   },
   mounted: function () { if (this.isAdmin) { this.loadStats(); SVC.loadPending(); } },
+  watch: {
+    /* 切到「首页图片」页签时才拉取，避免后台首次进入多发请求 */
+    tab: function (v) {
+      if (v === 'banner') { this.loadBanners(); this.loadPromos(); }
+      if (v === 'cats') this.loadAdminCats();
+    }
+  },
   methods: {
     setRange: function (v) {
       if (this.range === v) return;
@@ -933,6 +1158,211 @@ DH.views['admin-view'] = {
       if (n === 1) return { text: '已通过', color: '#0ca30c' };
       if (n === 2) return { text: '已拒绝', color: '#d03b3b' };
       return { text: '未知', color: '#898781' };
+    },
+
+    /* ---------- 首页轮播：GET/POST/PUT/DELETE /api/admin/banners ---------- */
+    loadBanners: function () {
+      var self = this;
+      if (!this.isAdmin) return;
+      this.banLoading = true;
+      this.banErr = '';
+      SVC.loadAdminBanners().then(function (list) {
+        self.banners = list;
+        self.banLoading = false;
+      }, function (e) {
+        self.banLoading = false;
+        if (e !== U.HANDLED) self.banErr = U.errMsg(e);
+      });
+    },
+    pickBanner: function (i) {
+      if (this.banUploading) return;
+      this.banSlot = i;
+      if (this.$refs.bannerFile) this.$refs.bannerFile.click();
+    },
+    /* 选图 → 传图拿到 URL → 有 id 走替换、无 id 走新增 */
+    onPickBanner: function (e) {
+      var self = this;
+      var file = (e.target.files || [])[0];
+      e.target.value = '';
+      if (!file) return;
+      var err = SVC.checkImage(file);
+      if (err) return this.toast(err, '⚠️');
+      var slot = this.bannerSlots[this.banSlot] || {};
+      this.banUploading = true;
+      SVC.uploadImage(file).then(function (url) {
+        return SVC.saveBanner(url, slot.id);
+      }).then(function () {
+        self.toast(slot.id ? '轮播图已替换' : '轮播图已上传', '✅');
+        self.loadBanners();
+        SVC.loadBanners().catch(function () {});
+      }, function (e2) {
+        if (e2 !== U.HANDLED) self.toast(U.errMsg(e2), '⚠️');
+      }).then(function () {
+        self.banUploading = false;
+      }, function () {
+        self.banUploading = false;
+      });
+    },
+    askDelBanner: function (s) {
+      if (!s || !s.id) return;
+      this.banDel = s;
+    },
+    doDelBanner: function () {
+      var self = this, s = this.banDel;
+      if (!s) return;
+      this.banUploading = true;
+      SVC.deleteBanner(s.id).then(function () {
+        self.toast('轮播图已删除', '✅');
+        self.banDel = null;
+        self.loadBanners();
+        SVC.loadBanners().catch(function () {});
+      }, function (e) {
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      }).then(function () {
+        self.banUploading = false;
+      }, function () {
+        self.banUploading = false;
+      });
+    },
+
+    /* ---------- 分类管理：GET/POST/PUT/DELETE /api/admin/categories ---------- */
+    loadAdminCats: function () {
+      var self = this;
+      this.catLoading = true;
+      this.catErr = '';
+      SVC.loadAdminCats().then(function (list) {
+        self.adminCats = list;
+        self.catLoading = false;
+      }, function (e) {
+        self.catLoading = false;
+        if (e !== U.HANDLED) self.catErr = U.errMsg(e);
+      });
+    },
+    openCat: function (c) {
+      this.cf = c
+        ? { id: c.id, name: c.name, sort: c.sort, status: Number(c.status) === 0 ? 0 : 1, icon: c.icon || '' }
+        : { id: null, name: '', sort: (this.adminCats.length + 1) * 10, status: 1, icon: '' };
+    },
+    /* 图标复用通用上传通道；拿到 URL 只写入表单，点保存才落库 */
+    onPickCatIcon: function (e) {
+      var self = this;
+      var file = (e.target.files || [])[0];
+      e.target.value = '';
+      if (!file) return;
+      var err = SVC.checkImage(file);
+      if (err) return this.toast(err, '⚠️');
+      this.catUploading = true;
+      SVC.uploadImage(file).then(function (url) {
+        if (self.cf) self.cf.icon = url;
+      }, function (e2) {
+        self.toast(SVC.uploadMsg(e2), '⚠️');
+      }).then(function () {
+        self.catUploading = false;
+      }, function () {
+        self.catUploading = false;
+      });
+    },
+    saveCat: function () {
+      var self = this, f = this.cf;
+      if (!f) return;
+      if (!f.name) return this.toast('请填写分类名称', '⚠️');
+      this.catSaving = true;
+      SVC.saveCategory({
+        name: f.name,
+        sort: Number(f.sort) || 0,
+        status: Number(f.status),
+        icon: f.icon || ''
+      }, f.id).then(function () {
+        self.toast(f.id ? '分类已更新' : '分类已创建', '✅');
+        self.cf = null;
+        self.loadAdminCats();
+        /* 前台分类缓存一并刷新，避免首页仍是旧数据 */
+        SVC.loadCats(true).catch(function () {});
+      }, function (e) {
+        if (e === U.HANDLED) return;
+        self.toast(e.code === 2013 ? '分类名称已存在，请换一个' : U.errMsg(e), '⚠️');
+      }).then(function () {
+        self.catSaving = false;
+      }, function () {
+        self.catSaving = false;
+      });
+    },
+    askDelCat: function (c) { this.catDel = c; },
+    doDelCat: function () {
+      var self = this, c = this.catDel;
+      if (!c) return;
+      this.catSaving = true;
+      SVC.deleteCategory(c.id).then(function () {
+        self.toast('分类已删除', '✅');
+        self.catDel = null;
+        self.loadAdminCats();
+        SVC.loadCats(true).catch(function () {});
+      }, function (e) {
+        if (e === U.HANDLED) return;
+        /* 2012：分类下还有商品，后端带回具体数量，直接展示 */
+        if (e && e.code === 2012) {
+          self.catDel = null;
+          self.toast(e.message || '该分类下还有商品，无法删除', '⚠️');
+          return;
+        }
+        self.toast(U.errMsg(e), '⚠️');
+      }).then(function () {
+        self.catSaving = false;
+      }, function () {
+        self.catSaving = false;
+      });
+    },
+
+    /* ---------- 首页促销位：GET /api/home/promos，PUT /api/admin/home/promos ---------- */
+    loadPromos: function () {
+      var self = this;
+      SVC.loadPromos().then(function (d) {
+        self.promoSaved = { all: d.all || '', newUser: d.newUser || '' };
+        self.promoDraft = { all: d.all || '', newUser: d.newUser || '' };
+      }, function () {
+        /* 未配置或接口异常时保持空值，页面回落到「点击上传」占位 */
+      });
+    },
+    pickPromo: function (k) {
+      if (this.promoUploading) return;
+      this.promoSlot = k;
+      if (this.$refs.promoFile) this.$refs.promoFile.click();
+    },
+    /* 选图 → 校验 → 上传 → 只写入草稿，预览即时生效，点「保存」才提交 */
+    onPickPromo: function (e) {
+      var self = this;
+      var file = (e.target.files || [])[0];
+      e.target.value = '';
+      if (!file) return;
+      var err = SVC.checkImage(file);
+      if (err) return this.toast(err, '⚠️');
+      var k = this.promoSlot;
+      this.promoUploading = k;
+      SVC.uploadImage(file).then(function (url) {
+        self.promoDraft[k] = url;
+      }, function (e2) {
+        self.toast(SVC.uploadMsg(e2), '⚠️');
+      }).then(function () {
+        self.promoUploading = '';
+      }, function () {
+        self.promoUploading = '';
+      });
+    },
+    clearPromo: function (k) { this.promoDraft[k] = ''; },
+    savePromoSettings: function () {
+      var self = this;
+      this.promoUploading = 'save';
+      SVC.savePromos({ all: this.promoDraft.all, newUser: this.promoDraft.newUser }).then(function (d) {
+        self.promoSaved = { all: d.all || '', newUser: d.newUser || '' };
+        self.promoDraft = { all: d.all || '', newUser: d.newUser || '' };
+        self.toast('促销位已保存', '✅');
+      }, function (e) {
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      }).then(function () {
+        self.promoUploading = '';
+      }, function () {
+        self.promoUploading = '';
+      });
     }
   }
 };

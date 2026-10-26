@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.BannerMapper">
+
+    <sql id="cols">id, image_url, sort, status, create_time, update_time</sql>
+
+    <select id="findEnabled" resultType="Banner">
+        SELECT <include refid="cols"/>
+        FROM banner
+        WHERE status = 1
+        ORDER BY sort ASC, id ASC
+        LIMIT 5
+    </select>
+
+    <select id="findAll" resultType="Banner">
+        SELECT <include refid="cols"/>
+        FROM banner
+        ORDER BY sort ASC, id ASC
+    </select>
+
+    <select id="findById" resultType="Banner">
+        SELECT <include refid="cols"/>
+        FROM banner
+        WHERE id = #{id}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM banner
+    </select>
+
+    <select id="maxSort" resultType="java.lang.Integer">
+        SELECT IFNULL(MAX(sort), 0) FROM banner
+    </select>
+
+    <insert id="insert" parameterType="Banner" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO banner (image_url, sort, status)
+        VALUES (#{imageUrl}, #{sort}, #{status})
+    </insert>
+
+    <update id="updateImageUrl" parameterType="Banner">
+        UPDATE banner
+        SET image_url = #{imageUrl}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM banner WHERE id = #{id}
+    </delete>
+
+</mapper>

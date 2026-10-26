@@ -85,7 +85,8 @@ function loadCats(force) {
     S().cats = U.listOf(list).map(function (c) {
       var m = DH.data.catMeta(c);
       S().catMeta[c.id] = m;
-      return { id: c.id, name: c.name || ('分类 ' + c.id), emoji: m.emoji, hue: m.hue, count: Number(c.count) || 0 };
+      return { id: c.id, name: c.name || ('分类 ' + c.id), icon: c.icon || '',
+               emoji: m.emoji, hue: m.hue, count: Number(c.count) || 0, productCount: Number(c.productCount) || 0 };
     });
     /* 分类拿到后，早先加载的商品重新着色 */
     (S().homeProducts || []).forEach(function (p) { if (p) adapt(p); });
@@ -481,6 +482,96 @@ function rejectApply(id, reason) {
   return api('POST', '/admin/product-apply/' + id + '/reject', { reason: reason });
 }
 
+/* ------------------------------------------------- 八、首页轮播图 */
+
+/** 后端 Banner → 视图对象；地址为空时标记为占位，视图层统一渲染 */
+function adaptBanner(b) {
+  var url = (b && (b.imageUrl || b.image)) || '';
+  return {
+    id: b && b.id ? b.id : null,
+    imageUrl: url,
+    sort: b ? b.sort : 0,
+    placeholder: !url
+  };
+}
+
+/** 前台读取轮播图（公开接口），同时写入全局 store 供首页复用 */
+function loadBanners() {
+  return api('GET', '/banners').then(function (d) {
+    S().banners = U.listOf(d).map(adaptBanner);
+    return S().banners;
+  });
+}
+
+/** 后台读取全部轮播图（含未启用项） */
+function loadAdminBanners() {
+  return api('GET', '/admin/banners').then(function (d) {
+    return U.listOf(d).map(adaptBanner);
+  });
+}
+
+/** 新增（无 id）或替换（有 id）轮播图，参数为已上传成功的图片地址 */
+function saveBanner(imageUrl, id) {
+  return id
+    ? api('PUT', '/admin/banners/' + id, { imageUrl: imageUrl })
+    : api('POST', '/admin/banners', { imageUrl: imageUrl });
+}
+
+function deleteBanner(id) {
+  return api('DELETE', '/admin/banners/' + id);
+}
+
+/* ------------------------------------------------- 九、首页促销位 */
+
+/** 读取两个促销位的图片地址（公开接口），未配置时返回空串 */
+function loadPromos() {
+  return api('GET', '/home/promos').then(function (d) {
+    S().promoImages = { all: (d && d.all) || '', newUser: (d && d.newUser) || '' };
+    return S().promoImages;
+  });
+}
+
+/** 管理员保存促销位图片；传空串表示清除图片、回到默认渐变卡片 */
+function savePromos(body) {
+  return api('PUT', '/admin/home/promos', body).then(function (d) {
+    S().promoImages = { all: (d && d.all) || '', newUser: (d && d.newUser) || '' };
+    return S().promoImages;
+  });
+}
+
+/** 上传失败的提示文案：把后端业务码翻译成可执行的说明 */
+function uploadMsg(e) {
+  if (!e || e === U.HANDLED) return '';
+  if (e.code === -2) return e.message || '图片不符合要求';
+  if (e.code === 2006) return '图片大小超过 5MB，请压缩后重试';
+  if (e.code === 2007) return '仅支持 JPG / PNG / WEBP 格式的图片';
+  if (e.code === 2009) return '图片上传失败，请检查网络后重试';
+  if (e.code === 2010) return '图片存储未配置，请联系管理员';
+  return e.message || '上传失败，请重试';
+}
+
+/* ------------------------------------------------- 十、分类管理（后台） */
+
+/** 后台分类列表：带每个分类下的商品数量 */
+function loadAdminCats() {
+  return api('GET', '/admin/categories').then(function (d) {
+    return U.listOf(d).map(function (c) {
+      return { id: c.id, name: c.name || '', sort: c.sort, status: c.status,
+               icon: c.icon || '', productCount: Number(c.productCount) || 0 };
+    });
+  });
+}
+
+/** 新增（无 id）或编辑（有 id）分类；icon 传空串表示清除图标 */
+function saveCategory(body, id) {
+  return id ? api('PUT', '/admin/categories/' + id, body) : api('POST', '/admin/categories', body);
+}
+
+/** 删除分类；分类下仍有商品时后端返回 2012 */
+function deleteCategory(id) {
+  return api('DELETE', '/admin/categories/' + id);
+}
+
 DH.services = {
   /* 商品与分类 */
   buildQuery: buildQuery, adapt: adapt, adaptCart: adaptCart,
@@ -504,7 +595,14 @@ DH.services = {
   shipOrder: shipOrder, saveProduct: saveProduct, deleteProduct: deleteProduct,
   /* 商品发布申请 */
   applyProduct: applyProduct, loadMyApplies: loadMyApplies,
-  loadApplies: loadApplies, approveApply: approveApply, rejectApply: rejectApply
+  loadApplies: loadApplies, approveApply: approveApply, rejectApply: rejectApply,
+  /* 首页轮播图 */
+  adaptBanner: adaptBanner, loadBanners: loadBanners, loadAdminBanners: loadAdminBanners,
+  saveBanner: saveBanner, deleteBanner: deleteBanner,
+  /* 首页促销位与上传提示 */
+  loadPromos: loadPromos, savePromos: savePromos, uploadMsg: uploadMsg,
+  /* 分类管理 */
+  loadAdminCats: loadAdminCats, saveCategory: saveCategory, deleteCategory: deleteCategory
 };
 
 })(window.DH);

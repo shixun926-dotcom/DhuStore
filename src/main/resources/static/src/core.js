@@ -108,23 +108,35 @@ DH.util = {
 
 /* ---------------------------------------------------------- 2. 静态字典 */
 
-var BANNERS = [
-  { id: 1, kicker: '新品首发', title: '数码焕新季', desc: '手机 / 电脑 / 智能设备，以旧换新最高补贴 800 元',
-    btn: '立即选购', to: '/list', goo: '📱', bg: 'linear-gradient(120deg,#2a78d6,#5aa9f5)' },
-  { id: 2, kicker: '限时折扣', title: '家居生活节', desc: '全场家电低至 5 折，满 999 再减 100',
-    btn: '去看看', to: '/list', goo: '🛋️', bg: 'linear-gradient(120deg,#eb6834,#ffa06b)' },
-  { id: 3, kicker: '会员专享', title: '美妆个护周', desc: '大牌正品直降，下单即赠旅行装小样',
-    btn: '马上抢购', to: '/list', goo: '💄', bg: 'linear-gradient(120deg,#6250d6,#9b8cf0)' }
-];
+/* 首页轮播：图片由管理员在后台「首页轮播」上传维护，最多 5 张。
+   接口返回空时用 5 张空白占位顶满版式，保证轮播尺寸与切换动效不变。 */
+var BANNER_SLOTS = 5;
 
+function bannerPlaceholders() {
+  var list = [];
+  for (var i = 0; i < BANNER_SLOTS; i++) {
+    list.push({ id: 'ph-' + i, imageUrl: '', placeholder: true });
+  }
+  return list;
+}
+
+/* 服务承诺条：图标为独立矢量资源（24 网格 / 1.75px 描边 / 统一品牌色），
+   不使用 emoji —— emoji 在不同系统渲染成彩色 3D 字形，线宽与视角无法统一。 */
 var PROMISES = [
-  { g: '🚚', t: '极速配送', d: '48 小时内发出' },
-  { g: '✅', t: '正品保障', d: '官方授权渠道' },
-  { g: '↩️', t: '7 天无理由', d: '不满意随时退' },
-  { g: '🛡️', t: '全国联保', d: '售后无忧' }
+  { icon: '/assets/img/promise/delivery.svg',  t: '极速配送',   d: '48 小时内发出' },
+  { icon: '/assets/img/promise/authentic.svg', t: '正品保障',   d: '官方授权渠道' },
+  { icon: '/assets/img/promise/return.svg',    t: '7 天无理由', d: '不满意随时退' },
+  { icon: '/assets/img/promise/warranty.svg',  t: '全国联保',   d: '售后无忧' }
 ];
 
-/* 订单状态：后端 status 0–4（用整数做键，才能直接索引） */
+/* 首页两个促销位：文案与跳转固定在前端，图片地址由后台配置；
+   未配置图片时回落到这里的渐变卡片，保证后台没配图也不缺位。 */
+var PROMOS = [
+  { k: 'all', to: '/list', title: '全部商品', sub: '分类浏览，一站买齐', cta: '立即查看',
+    bg: 'linear-gradient(140deg,#2a78d6,#5aa9f5)', emoji: '🔥' },
+  { k: 'newUser', to: '/user?tab=reg', title: '新人礼包', sub: '注册即领新人优惠', cta: '马上领取',
+    bg: 'linear-gradient(140deg,#eb6834,#ffa06b)', emoji: '🎁' }
+];
 var STATUS = {
   0: { text: '待付款', icon: '⏰', color: '#d03b3b' },
   1: { text: '已付款', icon: '💰', color: '#eda100' },
@@ -168,7 +180,8 @@ function catMeta(c) {
 }
 
 DH.data = {
-  banners: BANNERS, promises: PROMISES,
+  bannerSlots: BANNER_SLOTS, bannerPlaceholders: bannerPlaceholders,
+  promos: PROMOS, promises: PROMISES,
   status: STATUS, statusOf: statusOf, payText: payText,
   catIcon: CAT_ICON, catMeta: catMeta
 };
@@ -189,6 +202,10 @@ DH.initStore = function (Vue) {
     /* 分类 */
     cats: [],
     catMeta: {},
+    /* 首页轮播图（后端 /api/banners）；空数组时视图层回落为 5 张占位 */
+    banners: [],
+    /* 首页促销位图片（后端 /api/home/promos），未配置为空串 */
+    promoImages: { all: '', newUser: '' },
     /* 商品 */
     homeProducts: [],
     /* 商品 id → {name, emoji, hue, mainImage}，供购物车/订单行复用占位图 */

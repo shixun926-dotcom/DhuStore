@@ -40,6 +40,10 @@
         </where>
     </select>
 
+    <select id="countByCategory" resultType="long">
+        SELECT COUNT(*) FROM product WHERE category_id = #{categoryId}
+    </select>
+
     <insert id="insert" parameterType="Product" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO product (category_id, seller_id, name, subtitle, main_image, sub_images, detail, price, stock, status, sales)
         VALUES (#{categoryId}, #{sellerId}, #{name}, #{subtitle}, #{mainImage}, #{subImages}, #{detail}, #{price}, #{stock}, #{status}, #{sales})

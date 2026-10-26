@@ -153,6 +153,8 @@ select.field{appearance:none;padding-right:32px;
 .logo .mark{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
   background:linear-gradient(140deg,var(--brand),#ff7a5c);color:#fff;font-size:17px;
   box-shadow:0 3px 10px rgba(230,57,70,.34);}
+/* 品牌标识换成校徽图片后：保持 32×32 与圆角/投影不变，图片等比缩放不裁切 */
+.logo img.mark{display:block;object-fit:contain;background:#fff;}
 .logo em{color:var(--brand);font-style:normal;}
 
 .nav{display:flex;gap:4px;flex:none;}
@@ -201,10 +203,14 @@ select.field{appearance:none;padding-right:32px;
   display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:#767d88;}
 .promise{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
   border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-1);}
-.promise div{background:#fff;padding:18px;display:flex;align-items:center;gap:12px;}
-.promise .g{font-size:22px;}
-.promise b{display:block;font-size:14px;}
-.promise small{color:var(--ink-3);}
+.promise>div{background:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px;}
+/* 图标底板：40×40 浅品牌色方块，把线性图标托起来，避免裸图标在白色卡片里显得单薄 */
+.promise .ic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--brand-l);
+  display:grid;place-items:center;transition:background .18s ease;}
+.promise>div:hover .ic{background:#fbdfe3;}
+.promise .ic img{width:20px;height:20px;display:block;}
+.promise .tx b{display:block;font-size:14px;font-weight:600;line-height:1.35;}
+.promise .tx small{display:block;color:var(--ink-3);font-size:12.5px;line-height:1.5;margin-top:2px;}
 
 /* ------------------------------------------------- 5. 轻提示 / 动效 */
 .toasts{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:300;

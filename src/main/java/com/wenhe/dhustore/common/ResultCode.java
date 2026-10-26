@@ -28,7 +28,10 @@ public enum ResultCode {
     FILE_TYPE_NOT_ALLOWED(2007, "仅支持 JPG、JPEG、PNG、WEBP 格式"),
     IMAGE_COUNT_ERROR(2008, "商品图片数量需为 1-9 张"),
     UPLOAD_FAILED(2009, "图片上传失败，请重试"),
-    OSS_NOT_CONFIGURED(2010, "OSS 未配置 AccessKey，请检查 application-local.properties");
+    OSS_NOT_CONFIGURED(2010, "OSS 未配置 AccessKey，请检查 application-local.properties"),
+    BANNER_LIMIT(2011, "首页轮播图最多 5 张"),
+    CATEGORY_NOT_EMPTY(2012, "该分类下还有商品，无法删除"),
+    CATEGORY_NAME_EXISTS(2013, "分类名称已存在");
 
     private final int code;
     private final String message;
