@@ -24,4 +24,8 @@ public class CategoryRequest {
 
     @Size(max = 500, message = "图标地址过长")
     private String icon;
+
+    /** 品类横幅（16:9 场景图）；传空串表示清除、回落到色相渐变兜底，传 null 表示不改动 */
+    @Size(max = 500, message = "横幅地址过长")
+    private String cover;
 }

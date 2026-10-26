@@ -43,13 +43,28 @@
 .promo.media{padding:0;}
 .promo-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
 
-.cats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
-/* 分类卡：白卡 + 发丝边 + 14px 圆角。不加色块、不加装饰，靠栅格秩序与真实数据取胜 */
-.cat{background:#fff;border-radius:14px;padding:17px 8px 15px;text-align:center;
-  border:1px solid var(--line);box-shadow:none;
-  transition:transform .18s,box-shadow .18s,border-color .18s;}
-.cat:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:var(--brand-l);}
-.cat .cat-ic{margin:0 auto 9px;border-radius:12px;}
+.cats{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+/* 分类卡：16:9 场景图卡。图片铺满、底部渐变压暗、名称压在左下，图先声夺人 */
+.cat{position:relative;display:block;aspect-ratio:16/9;border-radius:14px;overflow:hidden;
+  isolation:isolate;background:#fff;text-decoration:none;
+  transition:transform .2s,box-shadow .2s;}
+.cat:hover{transform:translateY(-3px);box-shadow:var(--sh-3);}
+/* 图/兜底底板：无封面时按分类色相出柔和渐变，中心摆分类图标 */
+.cat-fig{position:absolute;inset:0;display:grid;place-items:center;padding-bottom:16px;
+  background:linear-gradient(150deg,hsl(var(--h,210) 90% 95%),hsl(var(--h,210) 62% 84%));}
+/* 用绝对定位铺满：percentage 高度在 aspect-ratio 容器内不可靠，会被图片固有比例顶开 */
+.cat-fig img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .55s cubic-bezier(.2,.8,.2,1);}
+.cat:hover .cat-fig img{transform:scale(1.07);}
+/* 底部渐变：只压住最下 46%，保证白字可读又不把整块色压脏 */
+.cat-shade{position:absolute;left:0;right:0;bottom:0;height:46%;pointer-events:none;
+  background:linear-gradient(to top,rgba(9,11,16,.72),rgba(9,11,16,.3) 58%,transparent);}
+.cat-tx{position:absolute;left:11px;right:10px;bottom:9px;color:#fff;z-index:1;}
+.cat-tx b{display:block;font-size:13px;font-weight:600;line-height:1.3;letter-spacing:-.1px;
+  text-shadow:0 1px 3px rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cat-tx small{display:block;font-size:11px;line-height:1.3;margin-top:1px;opacity:.86;
+  font-variant-numeric:tabular-nums;}
+.cat-tx small.dim{opacity:.55;}
 /* 分类区折叠：默认只露出前两排 + 第三排上半，第三排自上而下淡出；展开后完整显示 */
 .cats-wrap{position:relative;}
 .cats-wrap.clip{overflow:hidden;transition:max-height .38s cubic-bezier(.4,0,.2,1);}
@@ -69,39 +84,62 @@
 .ci img{width:100%;height:100%;object-fit:contain;display:block;}
 .ci.ci-img{background:#fff;}
 .ci.plain{background:transparent;}
-.cat b{font-size:13px;font-weight:600;display:block;color:var(--ink);letter-spacing:-.1px;}
-.cat small{display:block;color:var(--ink-3);font-size:11.5px;margin-top:3px;
-  font-variant-numeric:tabular-nums;}
-/* 无在售商品：数字退到更浅一档，避免“0 件”抢视线 */
-.cat small.dim{color:#b6bbc4;}
 
-/* 限时秒杀：白底承接整页灰，顶部 3px 品牌色条标识“进行中”，不再用整块深色 */
-.flash{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line-2);
-  border-radius:var(--r-lg);padding:20px 22px 22px;color:var(--ink);box-shadow:var(--sh-1);}
-.flash::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
-  background:linear-gradient(90deg,var(--brand),#ff8a5c);}
-.flash-hd{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
-.flash-hd h3{font-size:18px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:6px;}
-.flash-hd h3 .ui-ic{color:var(--brand);}
-.flash-hd .sub{color:var(--ink-3);font-size:12px;}
+/* 限时秒杀：深色场 + 左上红色径向光，制造“整点抢购”的热度氛围 */
+.flash{position:relative;overflow:hidden;color:#fff;border-radius:var(--r-lg);padding:20px 22px 22px;
+  background:
+    radial-gradient(78% 120% at 6% 0%, rgba(230,57,70,.62), transparent 58%),
+    radial-gradient(64% 110% at 100% 108%, rgba(255,138,92,.3), transparent 62%),
+    linear-gradient(120deg,#272b34,#15181d 62%);
+  box-shadow:0 12px 30px rgba(16,24,40,.16);}
+/* 顶部高光描边，深色块与灰色页面之间留一层“玻璃边” */
+.flash::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12);}
+.flash-hd{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;position:relative;z-index:1;}
+.flash-hd h3{font-size:19px;font-weight:800;letter-spacing:-.2px;display:flex;align-items:center;gap:6px;}
+.flash-hd h3 .ui-ic{color:#ff6b6b;}
+.flash-hd .sub{color:rgba(255,255,255,.6);font-size:12px;}
 .clock{display:flex;align-items:center;gap:5px;margin-left:auto;}
-.clock i{display:grid;place-items:center;min-width:26px;height:26px;padding:0 5px;border-radius:6px;
-  background:var(--brand-l);color:var(--brand);font-style:normal;font-weight:700;font-size:13px;
+.clock i{display:grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border-radius:7px;
+  background:#fff;color:#15181d;font-style:normal;font-weight:800;font-size:14px;
   font-variant-numeric:tabular-nums;}
-.clock s{color:var(--ink-3);text-decoration:none;}
-.flash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-.fcard{background:#fff;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;
+.clock s{color:rgba(255,255,255,.45);text-decoration:none;}
+.flash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative;z-index:1;}
+/* 卡片本体保持白底，与深色场形成强对比，图片成为视线落点 */
+.fcard{position:relative;background:#fff;border-radius:12px;overflow:hidden;
   color:var(--ink);cursor:pointer;
-  transition:transform .18s,box-shadow .18s,border-color .18s;}
-.fcard:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:var(--brand-l);}
+  transition:transform .2s,box-shadow .2s;}
+.fcard:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(0,0,0,.34);}
+/* 斜切「爆价」贴纸：外框斜 12°，内文反向斜回，保证文字正立 */
+.hot{position:absolute;top:9px;left:9px;z-index:3;transform:skewX(-12deg);
+  padding:3px 9px;border-radius:4px;font-size:11px;font-weight:800;letter-spacing:.5px;color:#fff;
+  background:linear-gradient(135deg,#ff5a3c,var(--brand));
+  box-shadow:0 3px 10px rgba(230,57,70,.5);}
+.hot>span{display:inline-block;transform:skewX(12deg);}
+/* 秒杀价：超粗大字号，价格是这一屏的主信息 */
+.f-price{font-size:27px;font-weight:800;letter-spacing:-1px;line-height:1.05;color:var(--brand);
+  font-variant-numeric:tabular-nums;}
+.f-price .cur{font-size:15px;font-weight:700;margin-right:1px;}
 .fcard .bd{padding:11px 12px;}
 .fcard .nm{font-size:13px;height:38px;overflow:hidden;display:-webkit-box;line-clamp:2;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .progress{height:4px;border-radius:2px;background:#f7e9eb;margin-top:9px;overflow:hidden;}
 .progress i{display:block;height:100%;background:linear-gradient(90deg,#ff8a5c,var(--brand));border-radius:2px;}
-.progress-txt{font-size:11px;color:var(--ink-3);margin-top:5px;}
+.progress-txt{display:flex;justify-content:space-between;gap:6px;font-size:11px;
+  color:var(--ink-3);margin-top:5px;font-variant-numeric:tabular-nums;}
+.progress-txt .out{color:var(--crit);font-weight:600;}
 
 /* 商品网格与卡片（首页 / 列表 / 详情推荐共用） */
 .goods{display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:14px;}
+/* 推荐区瀑布流：按列填充，卡片高度随图比例变化，形成错落的浏览节奏。
+   只作用于首页（.goods.masonry），列表页与详情页推荐仍用等高栅格 */
+.goods.masonry{display:block;columns:4;column-gap:14px;}
+.goods.masonry .gcard{break-inside:avoid;-webkit-column-break-inside:avoid;
+  margin:0 0 14px;width:100%;}
+/* 三种图比例轮换（1:1 / 4:5 / 3:4），制造高度差；无图时占位底色同样撑起比例 */
+.goods.masonry .gcard:nth-child(3n+2) .thumb{aspect-ratio:4/5;}
+.goods.masonry .gcard:nth-child(3n) .thumb{aspect-ratio:3/4;}
+/* 图区变大后，无图占位图标同比放大，空卡读作“待补图”而不是留白 */
+.goods.masonry .gcard .thumb .ui-ic{width:46px;height:46px;}
 .gcard{background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--sh-1);cursor:pointer;
   transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;}
 .gcard:hover{transform:translateY(-3px);box-shadow:var(--sh-3);}
@@ -286,6 +324,8 @@
 }
 @media (max-width:900px){
   .cats{grid-template-columns:repeat(3,1fr);}
+  .goods.masonry{columns:3;}
+  .f-price{font-size:24px;}
   .banner{grid-template-columns:1fr;}
   .promos{grid-template-columns:1fr 1fr;}
   .list-lay,.co-lay,.uc-lay{grid-template-columns:1fr;}
@@ -294,6 +334,16 @@
   .cart-item .c-price,.cart-item .c-sub,.cart-item .c-del{display:none;}
 }
 @media (max-width:600px){
+  /* 瀑布流收成两列；触屏没有 hover，加购按钮常显 */
+  .goods.masonry{columns:2;column-gap:10px;}
+  .goods.masonry .gcard{margin-bottom:10px;}
+  .goods.masonry .gcard .cart-mini{opacity:1;transform:none;}
+  .cat{border-radius:12px;}
+  .cat-tx{left:9px;right:8px;bottom:7px;}
+  .cat-tx b{font-size:12px;}
+  .cat-tx small{font-size:10px;}
+  .f-price{font-size:22px;}
+  .flash-hd h3{font-size:17px;}
   .cats{grid-template-columns:repeat(2,1fr);}
   .promos{grid-template-columns:1fr;}
   .flash-grid{grid-template-columns:1fr 1fr;}

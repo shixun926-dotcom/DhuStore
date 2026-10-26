@@ -61,10 +61,17 @@ DH.views['home-view'] = {
     <div class="cats-wrap" :class="{ clip: catsNeedClip && !catsExpanded }" :style="catsWrapStyle">
       <div class="cats" ref="catsGrid" v-if="store.cats.length" :style="catsMaskStyle">
         <a class="cat" v-for="c in store.cats" :key="c.id" :href="'#/list?cat='+c.id"
-           @click.prevent="go('/list?cat='+c.id)">
-          <cat-icon :cat="c" :size="44" class="cat-ic"></cat-icon>
-          <b>{{ c.name }}</b>
-          <small :class="{ dim: !c.onlineCount }">{{ c.onlineCount ? c.onlineCount + ' 件在售' : '暂无在售' }}</small>
+           :class="{ 'has-img': !!c.cover }" @click.prevent="go('/list?cat='+c.id)">
+          <span class="cat-fig" :style="{ '--h': c.hue }">
+            <img v-if="c.cover" :src="c.cover" :alt="c.name" loading="lazy"
+                 @error="c.cover = ''">
+            <cat-icon v-else :cat="c" :size="42"></cat-icon>
+          </span>
+          <span class="cat-shade"></span>
+          <span class="cat-tx">
+            <b>{{ c.name }}</b>
+            <small :class="{ dim: !c.onlineCount }">{{ c.onlineCount ? c.onlineCount + ' 件在售' : '暂无在售' }}</small>
+          </span>
         </a>
       </div>
       <div v-else class="skel" style="height:118px"></div>
@@ -101,6 +108,7 @@ DH.views['home-view'] = {
     </div>
     <div class="flash-grid">
       <div class="fcard" v-for="p in flashGoods" :key="p.id" @click="go('/detail/'+p.id)">
+        <span class="hot"><span>{{ p.stock > 0 ? '爆价' : '售罄' }}</span></span>
         <div class="thumb" :style="{'--h':p.hue,'--fs':'64px'}">
           <ui-icon name="box"></ui-icon>
           <img v-if="p.mainImage" :src="p.mainImage" alt="" class="gone"
@@ -108,11 +116,15 @@ DH.views['home-view'] = {
         </div>
         <div class="bd">
           <div class="nm">{{ p.name }}</div>
-          <div class="row" style="margin-top:8px">
-            <span class="price" style="font-size:17px"><span class="cur">¥</span>{{ money(p.price) }}</span>
+          <div class="row" style="margin-top:6px">
+            <span class="f-price"><span class="cur">¥</span>{{ money(p.price) }}</span>
           </div>
           <div class="progress"><i :style="{width: p.progress+'%'}"></i></div>
-          <div class="progress-txt">已售 {{ p.progress }}%　仅剩 {{ p.stock }} 件</div>
+          <div class="progress-txt">
+            <span>已售 {{ p.progress }}%</span>
+            <span v-if="p.stock > 0">仅剩 {{ p.stock }} 件</span>
+            <span v-else class="out">已售罄</span>
+          </div>
         </div>
       </div>
     </div>
@@ -139,7 +151,7 @@ DH.views['home-view'] = {
       </div>
     </div>
 
-    <div v-else-if="store.homeProducts.length" class="goods">
+    <div v-else-if="store.homeProducts.length" class="goods masonry">
       <goods-card v-for="p in store.homeProducts" :key="p.id" :p="p"></goods-card>
     </div>
 
@@ -182,7 +194,10 @@ DH.views['home-view'] = {
     /* 只在收起态下加遮罩：前两排不透明，第三排从其上边缘线性淡到裁切边缘 */
     catsMaskStyle: function () {
       if (!this.catsNeedClip || this.catsExpanded || !this.catsClipH) return {};
-      var g = 'linear-gradient(to bottom, #000 0px, #000 ' + this.catsFadeStart +
+      /* 第三排前 45% 保持不透明，之后才淡出：这样“半排可见”是真的看得见，
+         不会因为整段线性淡出而在裁切线前就消失 */
+      var solidEnd = this.catsFadeStart + (this.catsClipH - this.catsFadeStart) * 0.45;
+      var g = 'linear-gradient(to bottom, #000 0px, #000 ' + solidEnd +
               'px, transparent ' + this.catsClipH + 'px)';
       return { maskImage: g, WebkitMaskImage: g };
     },

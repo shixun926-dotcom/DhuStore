@@ -49,6 +49,7 @@ public class CategoryService {
         category.setSort(req.getSort() == null ? 0 : req.getSort());
         category.setStatus(req.getStatus() == null ? 1 : req.getStatus());
         category.setIcon(normalizeIcon(req.getIcon()));
+        category.setCover(normalizeIcon(req.getCover()));
         categoryMapper.insert(category);
         return categoryMapper.findById(category.getId());
     }
@@ -67,8 +68,9 @@ public class CategoryService {
         if (req.getParentId() != null) category.setParentId(req.getParentId());
         if (req.getSort() != null) category.setSort(req.getSort());
         if (req.getStatus() != null) category.setStatus(req.getStatus());
-        /* icon 显式传空串表示清除图标，传 null 表示不改动 */
+        /* icon / cover 显式传空串表示清除，传 null 表示不改动 */
         if (req.getIcon() != null) category.setIcon(normalizeIcon(req.getIcon()));
+        if (req.getCover() != null) category.setCover(normalizeIcon(req.getCover()));
         categoryMapper.update(category);
         return categoryMapper.findById(id);
     }

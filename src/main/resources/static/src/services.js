@@ -85,7 +85,7 @@ function loadCats(force) {
     S().cats = U.listOf(list).map(function (c) {
       var m = DH.data.catMeta(c);
       S().catMeta[c.id] = m;
-      return { id: c.id, name: c.name || ('分类 ' + c.id), icon: c.icon || '',
+      return { id: c.id, name: c.name || ('分类 ' + c.id), icon: c.icon || '', cover: c.cover || '',
                emoji: m.emoji, hue: m.hue, count: Number(c.count) || 0,
                productCount: Number(c.productCount) || 0, onlineCount: Number(c.onlineCount) || 0 };
     });

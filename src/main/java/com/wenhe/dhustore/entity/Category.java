@@ -16,6 +16,9 @@ public class Category {
     private Integer sort;
     /** 分类图标图片地址；为空时前端回落到内置图形 */
     private String icon;
+
+    /** 品类横幅（16:9 场景图）地址；为空时前台用色相渐变 + 图标兜底 */
+    private String cover;
     /** 0-禁用 1-启用 */
     private Integer status;
     /** 非数据库字段：该分类下的商品数量，仅后台列表使用 */

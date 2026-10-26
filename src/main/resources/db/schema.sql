@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `category` (
     `parent_id`   BIGINT      NOT NULL DEFAULT 0 COMMENT '父分类 id，0 表示顶级',
     `sort`        INT         NOT NULL DEFAULT 0 COMMENT '排序值',
     `icon`        VARCHAR(500) DEFAULT NULL COMMENT '分类图标图片地址，空则前端回落内置图形',
+    `cover`       VARCHAR(500) DEFAULT NULL COMMENT '品类横幅地址，空则前台用色相渐变兜底',
     `status`      TINYINT     NOT NULL DEFAULT 1 COMMENT '0-禁用 1-启用',
     `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

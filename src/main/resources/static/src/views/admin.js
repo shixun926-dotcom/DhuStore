@@ -801,11 +801,31 @@ DH.views['admin-view'] = {
               <button class="btn btn-sm btn-danger" v-if="cf.icon" :disabled="catUploading"
                       @click="cf.icon=''">移除</button>
             </div>
-            <div class="ava-tip">建议正方形、透明底的 PNG / SVG<br>首页展示为 52×52，列表与面包屑按比例缩小</div>
+            <div class="ava-tip">建议正方形、透明底的 PNG / SVG<br>用于首页卡片兜底、列表侧栏与面包屑，按比例缩放</div>
           </div>
           <input type="file" ref="catIconFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
                  @change="onPickCatIcon">
         </div>
+
+        <label class="lbl">品类横幅（首页分类卡）</label>
+        <div class="cv-row">
+          <div class="cv-prev">
+            <img v-if="cf.cover" :src="cf.cover" alt="">
+            <span v-else class="cv-empty">未设置封面<br>前台用分类色渐变兜底</span>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" :disabled="coverUploading" @click="$refs.catCoverFile.click()">
+                {{ cf.cover ? '更换横幅' : '上传横幅' }}</button>
+              <button class="btn btn-sm btn-danger" v-if="cf.cover" :disabled="coverUploading"
+                      @click="cf.cover=''">移除</button>
+            </div>
+            <div class="ava-tip">建议 16:9 横图，720×405 以上<br>前台会在底部加渐变压暗，白色分类名压在上面</div>
+          </div>
+          <input type="file" ref="catCoverFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
+                 @change="onPickCatCover">
+        </div>
+
         <label class="lbl">分类名称<span class="req">*</span></label>
         <input class="field" v-model.trim="cf.name" placeholder="如：手机数码">
         <div class="frow" style="margin-top:14px">
@@ -866,7 +886,7 @@ DH.views['admin-view'] = {
       gf: null, delTarget: null, saving: false, goodsUnsupported: false,
       /* 分类管理 */
       adminCats: [], catLoading: false, catErr: '', cf: null,
-      catSaving: false, catUploading: false, catDel: null,
+      catSaving: false, catUploading: false, coverUploading: false, catDel: null,
       /* 限时秒杀位 */
       flashList: [], fsLoading: false, fsErr: '', fsSaving: false,
       fsPick: false, fsPickTarget: null, fsKw: '', fsProducts: [], fsSearching: false, fsDel: null,
@@ -1336,8 +1356,10 @@ DH.views['admin-view'] = {
     },
     openCat: function (c) {
       this.cf = c
-        ? { id: c.id, name: c.name, sort: c.sort, status: Number(c.status) === 0 ? 0 : 1, icon: c.icon || '' }
-        : { id: null, name: '', sort: (this.adminCats.length + 1) * 10, status: 1, icon: '' };
+        ? { id: c.id, name: c.name, sort: c.sort, status: Number(c.status) === 0 ? 0 : 1,
+            icon: c.icon || '', cover: c.cover || '' }
+        : { id: null, name: '', sort: (this.adminCats.length + 1) * 10, status: 1,
+            icon: '', cover: '' };
     },
     /* 图标复用通用上传通道；拿到 URL 只写入表单，点保存才落库 */
     onPickCatIcon: function (e) {
@@ -1358,6 +1380,25 @@ DH.views['admin-view'] = {
         self.catUploading = false;
       });
     },
+    /* 封面复用同一上传通道；同样只写表单，点保存才落库 */
+    onPickCatCover: function (e) {
+      var self = this;
+      var file = (e.target.files || [])[0];
+      e.target.value = '';
+      if (!file) return;
+      var err = SVC.checkImage(file);
+      if (err) return this.toast(err, '⚠️');
+      this.coverUploading = true;
+      SVC.uploadImage(file).then(function (url) {
+        if (self.cf) self.cf.cover = url;
+      }, function (e2) {
+        self.toast(SVC.uploadMsg(e2), '⚠️');
+      }).then(function () {
+        self.coverUploading = false;
+      }, function () {
+        self.coverUploading = false;
+      });
+    },
     saveCat: function () {
       var self = this, f = this.cf;
       if (!f) return;
@@ -1367,7 +1408,8 @@ DH.views['admin-view'] = {
         name: f.name,
         sort: Number(f.sort) || 0,
         status: Number(f.status),
-        icon: f.icon || ''
+        icon: f.icon || '',
+        cover: f.cover || ''
       }, f.id).then(function () {
         self.toast(f.id ? '分类已更新' : '分类已创建', '✅');
         self.cf = null;

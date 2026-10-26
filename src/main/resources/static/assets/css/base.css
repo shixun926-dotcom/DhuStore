@@ -263,6 +263,8 @@ img.avatar{display:block;object-fit:cover;background:#2f353e;}
   /* 窄屏页头收纳：搜索框可压缩，购物车/登录只留图标，避免整页被撑出横向滚动 */
   .header .wrap{gap:8px;}
   .search{min-width:0;}
+  /* 输入框必须跟随容器收缩，否则它会保持自身固有宽度并把右侧动作区顶出屏幕 */
+  .search input{width:100%;min-width:0;}
   .search input{height:36px;font-size:13px;padding-left:33px;}
   .search .ico{left:11px;}
   .logo{font-size:16px;gap:7px;}
