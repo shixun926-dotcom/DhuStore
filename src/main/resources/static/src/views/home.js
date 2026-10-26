@@ -57,16 +57,36 @@ DH.views['home-view'] = {
       <div><div class="sec-title">全部分类</div><div class="sec-sub">按需选购，快速直达</div></div>
       <a class="btn btn-sm" href="#/list" @click.prevent="go('/list')">查看全部商品 →</a>
     </div>
-    <div class="cats" v-if="store.cats.length">
-      <a class="cat" v-for="c in store.cats" :key="c.id" :href="'#/list?cat='+c.id"
-         @click.prevent="go('/list?cat='+c.id)">
-        <cat-icon :cat="c" :size="52" class="cat-ic"></cat-icon>
-        <b>{{ c.name }}</b>
-        <small v-if="c.count">{{ c.count }} 件在售</small>
-        <small v-else>点击选购</small>
-      </a>
+    <div class="cats-wrap" :class="{ clip: catsNeedClip && !catsExpanded }" :style="catsWrapStyle">
+      <div class="cats" ref="catsGrid" v-if="store.cats.length" :style="catsMaskStyle">
+        <a class="cat" v-for="c in store.cats" :key="c.id" :href="'#/list?cat='+c.id"
+           @click.prevent="go('/list?cat='+c.id)">
+          <cat-icon :cat="c" :size="52" class="cat-ic"></cat-icon>
+          <b>{{ c.name }}</b>
+          <small v-if="c.count">{{ c.count }} 件在售</small>
+          <small v-else>点击选购</small>
+        </a>
+      </div>
+      <div v-else class="skel" style="height:118px"></div>
+
+      <!-- 收起态：按钮压在第三排可见区域的中线上 -->
+      <div class="cats-more" v-if="catsNeedClip && !catsExpanded" :style="{ top: catsBtnTop + 'px' }">
+        <button class="btn cats-btn" @click="toggleCats">
+          展示全部<span class="cnt">共 {{ store.cats.length }} 个分类</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round"><path d="M2 4l3 3 3-3"/></svg>
+        </button>
+      </div>
     </div>
-    <div v-else class="skel" style="height:118px"></div>
+
+    <!-- 展开态：按钮移到列表下方，不再遮挡任何卡片 -->
+    <div class="cats-foot" v-if="catsNeedClip && catsExpanded">
+      <button class="btn cats-btn" @click="toggleCats">
+        收起
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round"><path d="M2 6l3-3 3 3"/></svg>
+      </button>
+    </div>
   </section>
 
   <!-- 限时秒杀 -->
@@ -132,7 +152,12 @@ DH.views['home-view'] = {
 </div>`,
 
   data: function () {
-    return { loading: false, err: '', idx: 0, clock: { h: '00', m: '00', s: '00' }, _t: 0, _ct: 0 };
+    return {
+      loading: false, err: '', idx: 0, clock: { h: '00', m: '00', s: '00' }, _t: 0, _ct: 0,
+      /* 分类区折叠：两排半可见 + 第三排渐变淡出；数值全部按实际布局测量，不写死 */
+      catsExpanded: false, catsNeedClip: false,
+      catsClipH: 0, catsFullH: 0, catsFadeStart: 0, catsBtnTop: 0, _catsT: 0
+    };
   },
   computed: {
     /* 促销位：静态文案来自 DH.data.promos，图片来自后台配置；有图则整卡变图片，跳转不变 */
@@ -142,6 +167,18 @@ DH.views['home-view'] = {
         return { k: p.k, to: p.to, title: p.title, sub: p.sub, cta: p.cta,
                  bg: p.bg, emoji: p.emoji, image: imgs[p.k] || '' };
       });
+    },
+    /* 折叠态的容器高度：展开用完整高度，收起用「两排 + 半排」 */
+    catsWrapStyle: function () {
+      if (!this.catsNeedClip) return {};
+      return { maxHeight: (this.catsExpanded ? this.catsFullH : this.catsClipH) + 'px' };
+    },
+    /* 只在收起态下加遮罩：前两排不透明，第三排从其上边缘线性淡到裁切边缘 */
+    catsMaskStyle: function () {
+      if (!this.catsNeedClip || this.catsExpanded || !this.catsClipH) return {};
+      var g = 'linear-gradient(to bottom, #000 0px, #000 ' + this.catsFadeStart +
+              'px, transparent ' + this.catsClipH + 'px)';
+      return { maskImage: g, WebkitMaskImage: g };
     },
     /* 秒杀位取在售且有库存的前 4 件；进度 = 已售 /（已售+库存），是真实比例 */
     flashGoods: function () {
@@ -157,17 +194,22 @@ DH.views['home-view'] = {
     this.load();
     this.startCarousel();
     this.startClock();
+    /* 分类卡片渲染完才能量高度；窗口尺寸变化后（栅格列数变了）需要重算 */
+    this.$nextTick(this.measureCats);
+    window.addEventListener('resize', this.onCatsResize);
   },
   beforeUnmount: function () {
     this.stopCarousel();
     clearInterval(this._ct);
+    window.removeEventListener('resize', this.onCatsResize);
+    clearTimeout(this._catsT);
   },
   methods: {
     load: function () {
       var self = this;
       this.loading = true;
       this.err = '';
-      SVC.loadCats().catch(function () {});
+      SVC.loadCats().then(function () { self.$nextTick(self.measureCats); }).catch(function () {});
       /* 轮播图来自后台；请求失败时保持占位，不阻塞首页其余内容 */
       SVC.loadBanners().catch(function () {});
       /* 促销位图片来自后台；失败时回落到内置渐变卡片 */
@@ -179,6 +221,45 @@ DH.views['home-view'] = {
         self.loading = false;
         if (e !== U.HANDLED) self.err = U.errMsg(e);
       });
+    },
+    /* 量出单行高度与列数：只需露出前两整排 + 第三排上半，故裁切高度 = 2 行 + 2 间隙 + 0.5 行 */
+    measureCats: function () {
+      var el = this.$refs.catsGrid;
+      if (!el || !el.children.length) { this.catsNeedClip = false; return; }
+      var first = el.children[0];
+      var gap = parseFloat(getComputedStyle(el).rowGap) || 12;
+      var rowH = first.offsetHeight;
+      var cols = 0;
+      for (var i = 0; i < el.children.length; i++) {
+        if (Math.abs(el.children[i].offsetTop - first.offsetTop) < 2) cols++; else break;
+      }
+      if (cols < 1) cols = 1;
+
+      /* 不超过两排就不折叠，也不出按钮 */
+      this.catsNeedClip = el.children.length > cols * 2;
+      if (!this.catsNeedClip) {
+        this.catsClipH = 0; this.catsFullH = 0; this.catsExpanded = false;
+        return;
+      }
+      var fadeStart = 2 * rowH + 2 * gap;      /* 第三排上边缘 */
+      var clipH = fadeStart + rowH * 0.5;      /* 露出第三排的上半 */
+      this.catsFadeStart = fadeStart;
+      this.catsClipH = clipH;
+      this.catsFullH = Math.max(clipH, el.scrollHeight + 2);
+      this.catsBtnTop = fadeStart + rowH * 0.25; /* 第三排可见区域的中线 */
+    },
+    toggleCats: function () {
+      this.catsExpanded = !this.catsExpanded;
+      if (!this.catsExpanded) {
+        /* 收起后重算一次，防止展开期间容器宽度变化导致裁切高度过期 */
+        var self = this;
+        this.$nextTick(function () { self.measureCats(); });
+      }
+    },
+    onCatsResize: function () {
+      var self = this;
+      clearTimeout(this._catsT);
+      this._catsT = setTimeout(function () { self.measureCats(); }, 120);
     },
     startCarousel: function () {
       var self = this;

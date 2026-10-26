@@ -48,6 +48,18 @@
   transition:transform .18s,box-shadow .18s;border:1px solid transparent;}
 .cat:hover{transform:translateY(-3px);box-shadow:var(--sh-2);border-color:var(--brand-l);}
 .cat .cat-ic{margin:0 auto 10px;border-radius:16px;}
+/* 分类区折叠：默认只露出前两排 + 第三排上半，第三排自上而下淡出；展开后完整显示 */
+.cats-wrap{position:relative;}
+.cats-wrap.clip{overflow:hidden;transition:max-height .38s cubic-bezier(.4,0,.2,1);}
+.cats-more{position:absolute;left:0;right:0;display:flex;justify-content:center;
+  transform:translateY(-50%);z-index:2;pointer-events:none;}
+.cats-more .cats-btn{pointer-events:auto;}
+.cats-foot{display:flex;justify-content:center;margin-top:16px;}
+.cats-btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 20px;border-radius:20px;
+  background:#fff;border:1px solid var(--line);color:var(--brand);font-size:13px;font-weight:600;
+  box-shadow:var(--sh-2);transition:box-shadow .18s,transform .18s,border-color .18s;}
+.cats-btn:hover{border-color:var(--brand);box-shadow:var(--sh-3);transform:translateY(-1px);}
+.cats-btn .cnt{color:var(--ink-3);font-weight:400;font-size:12px;}
 /* 分类图标容器：图片与内置图形共用同一尺寸与圆角，首页/侧栏/面包屑三处统一 */
 .ci{width:var(--s,22px);height:var(--s,22px);border-radius:calc(var(--s,22px) * .28);display:inline-grid;
   place-items:center;flex:none;overflow:hidden;line-height:1;font-size:calc(var(--s,22px) * .5);
