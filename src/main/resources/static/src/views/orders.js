@@ -27,7 +27,7 @@ DH.views['orders-view'] = {
   <template v-else>
     <div class="bar">
       <button v-for="t in tabs" :key="t.k" class="pill" :class="{on:tab===t.k}" @click="tab=t.k">
-        {{ t.t }}
+        <ui-icon :name="t.ic" :size="16"></ui-icon>{{ t.t }}
         <span v-if="t.k==='2' && store.pending>0" class="pill-badge">{{ store.pending }}</span>
         <span v-else-if="cntOf(t.k)" style="opacity:.7">{{ cntOf(t.k) }}</span>
       </button>
@@ -140,8 +140,12 @@ DH.views['orders-view'] = {
   computed: {
     tabs: function () {
       return [
-        { k: 'all', t: '全部' }, { k: '0', t: '待付款' }, { k: '1', t: '待发货' },
-        { k: '2', t: '待收货' }, { k: '3', t: '已完成' }, { k: '4', t: '已取消' }
+        { k: 'all', t: '全部', ic: 'grid' },
+        { k: '0', t: '待付款', ic: 'wallet' },
+        { k: '1', t: '待发货', ic: 'box' },
+        { k: '2', t: '待收货', ic: 'truck' },
+        { k: '3', t: '已完成', ic: 'check' },
+        { k: '4', t: '已取消', ic: 'close' }
       ];
     },
     filtered: function () {
