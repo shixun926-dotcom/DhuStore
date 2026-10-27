@@ -324,16 +324,70 @@ function loadPending() {
   }, function () { return s.pending; });
 }
 
-function createOrder(addressId, payment, remark) {
-  return api('POST', '/orders', { addressId: addressId, payment: payment, remark: remark || '' });
+/** 结算页试算：金额明细 + 可用券 + 商品可购买性，与下单同一套计算 */
+function previewOrder(couponId) {
+  var q = couponId ? ('?couponId=' + encodeURIComponent(couponId)) : '';
+  return api('GET', '/orders/preview' + q);
 }
 
-function payOrder(o) {
-  return act('/orders/' + o.orderNo + '/pay', '支付成功', '💰');
+/** 一次性提交令牌，进入结算页时领取，提交时回传，服务端据此去重 */
+function newSubmitToken() {
+  return api('POST', '/orders/submit-token').then(function (d) { return d && d.token; });
 }
 
-function cancelOrder(o) {
-  return act('/orders/' + o.orderNo + '/cancel', '订单已取消', '🚫');
+function createOrder(payload) {
+  return api('POST', '/orders', payload);
+}
+
+/** 服务端分页的订单列表，status 为空表示全部 */
+function pageOrders(status, page, size) {
+  var q = 'page=' + (page || 1) + '&size=' + (size || 10);
+  if (status !== '' && status !== undefined && status !== null) q += '&status=' + status;
+  return api('GET', '/orders?' + q);
+}
+
+function cancelOrder(o, reason) {
+  var q = reason ? ('?reason=' + encodeURIComponent(reason)) : '';
+  return act('/orders/' + o.orderNo + '/cancel' + q, '订单已取消', '🚫');
+}
+
+/* ------------------------------------------------------------- 四之二、支付 */
+
+function createPayment(orderNo, channel) {
+  return api('POST', '/payments', { orderNo: orderNo, channel: channel });
+}
+
+/** 模拟三方网关回调：服务端验单后推进订单状态 */
+function mockPay(paymentNo) {
+  return api('POST', '/payments/' + paymentNo + '/mock-callback');
+}
+
+function queryPayment(paymentNo) {
+  return api('GET', '/payments/' + paymentNo);
+}
+
+/* ------------------------------------------------------------- 四之三、售后 */
+
+function applyRefund(orderNo, payload) {
+  return api('POST', '/orders/' + orderNo + '/refund', payload);
+}
+
+function loadRefunds() {
+  return api('GET', '/refunds').then(function (d) { return U.listOf(d); });
+}
+
+/* ------------------------------------------------------------- 四之四、优惠券 */
+
+function loadReceivableCoupons() {
+  return api('GET', '/coupons/receivable').then(function (d) { return U.listOf(d); });
+}
+
+function claimCoupon(couponId) {
+  return api('POST', '/coupons/' + couponId + '/claim').then(function () {
+    DH.toast('优惠券已领取', '🎉');
+  }, function (e) {
+    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+  });
 }
 
 /** 2→3 确认收货：契约接口，后端未实现时降级提示 */
@@ -745,8 +799,15 @@ DH.services = {
   removeCart: removeCart, setCartQty: setCartQty, toggleCartLine: toggleCartLine,
   setAllChecked: setAllChecked, clearChecked: clearChecked,
   /* 订单 */
-  loadOrders: loadOrders, loadPending: loadPending, createOrder: createOrder, payOrder: payOrder,
+  loadOrders: loadOrders, loadPending: loadPending, createOrder: createOrder,
+  previewOrder: previewOrder, newSubmitToken: newSubmitToken, pageOrders: pageOrders,
   cancelOrder: cancelOrder, confirmOrder: confirmOrder, rebuyOrder: rebuyOrder,
+  /* 支付 */
+  createPayment: createPayment, mockPay: mockPay, queryPayment: queryPayment,
+  /* 售后 */
+  applyRefund: applyRefund, loadRefunds: loadRefunds,
+  /* 优惠券 */
+  loadReceivableCoupons: loadReceivableCoupons, claimCoupon: claimCoupon,
   /* 地址 */
   loadAddresses: loadAddresses, saveAddress: saveAddress,
   setDefaultAddress: setDefaultAddress, deleteAddress: deleteAddress,

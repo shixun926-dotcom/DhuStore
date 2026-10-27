@@ -19,5 +19,7 @@ public class OrderItem {
     private BigDecimal unitPrice;
     private Integer quantity;
     private BigDecimal totalPrice;
+    /** 售后状态 0-无 1-退款中 2-已退款 */
+    private Integer refundStatus;
     private LocalDateTime createTime;
 }

@@ -1,6 +1,6 @@
 /* ==========================================================================
-   views/checkout.js — 结算页：选地址 / 支付方式 / 备注 / 提交订单
-   运费与优惠不在前端计算，只显示商品金额小计，实际以服务端下单后的 totalPrice 为准。
+   views/checkout.js — 结算页：地址 / 优惠券 / 配送与支付 / 价格明细 / 提交
+   金额一律来自 GET /api/orders/preview，与下单走同一套计算，前端不做任何推算。
    ========================================================================== */
 window.DH = window.DH || {};
 DH.views = DH.views || {};
@@ -9,6 +9,7 @@ DH.views = DH.views || {};
 'use strict';
 
 var SVC = DH.services, U = DH.util;
+var noop = function () {};
 
 DH.views['checkout-view'] = {
   template: `
@@ -27,7 +28,7 @@ DH.views['checkout-view'] = {
     <div class="acts"><button class="btn btn-primary" @click="go('/user','tab=login')">去登录</button></div>
   </div>
 
-  <div v-else-if="!items.length" class="state card">
+  <div v-else-if="!pv || !pv.items.length" class="state card">
     <div class="ico"><ui-icon name="receipt" :size="34"></ui-icon></div><div class="t">没有待结算的商品</div>
     <div class="d">购物车里还没有勾选商品。先去挑几件，或在购物车里勾选要结算的商品。</div>
     <div class="acts">
@@ -40,11 +41,11 @@ DH.views['checkout-view'] = {
     <div style="display:grid;gap:16px">
       <!-- 收货地址 -->
       <div class="card pad">
-        <div style="display:flex;align-items:center;margin-bottom:16px">
-          <h3 style="font-size:16px;font-weight:700">收货地址</h3>
-          <button class="btn btn-sm" style="margin-left:auto" @click="openAddr()">＋ 新增地址</button>
+        <div class="co-hd">
+          <h3>收货地址</h3>
+          <button class="btn btn-sm" @click="openAddr()">＋ 新增地址</button>
         </div>
-        <div v-if="store.addresses.length" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div v-if="store.addresses.length" class="addr-grid">
           <div class="addr" v-for="a in store.addresses" :key="a.id" :class="{on:addrId===a.id}" @click="addrId=a.id">
             <div class="who">{{ a.receiverName }}<small>{{ a.receiverPhone }}</small>
               <span class="tag tag-brand" v-if="a.isDefault===1">默认</span></div>
@@ -60,71 +61,117 @@ DH.views['checkout-view'] = {
 
       <!-- 商品清单 -->
       <div class="card">
-        <h3 style="font-size:16px;font-weight:700;padding:16px 20px;border-bottom:1px solid var(--line-2)">商品清单</h3>
-        <div style="padding:8px 20px">
-          <div class="og" v-for="it in items" :key="it.id" style="padding:12px 0;border-bottom:1px solid var(--line-2)">
-            <div class="thumb" :style="{'--h':it.hue}">
-              <span>{{ it.emoji }}</span>
-              <img v-if="it.mainImage" :src="it.mainImage" alt="" class="gone"
+        <div class="co-hd"><h3>商品清单</h3><span>{{ totalQty }} 件</span></div>
+        <div class="co-goods">
+          <div class="og" v-for="it in pv.items" :key="it.cartItemId">
+            <div class="thumb" :style="{'--h':160}">
+              <ui-icon name="box"></ui-icon>
+              <img v-if="it.productImage" :src="it.productImage" alt="" class="gone"
                    @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
             </div>
-            <div class="nm">{{ it.productName }}</div>
+            <div class="nm">
+              {{ it.productName }}
+              <span class="tag tag-warn" v-if="!it.available">不可购买</span>
+            </div>
             <div class="pr">¥{{ money(it.price) }} × {{ it.quantity }}</div>
-            <b style="width:90px;text-align:right;color:var(--brand)">¥{{ money(it.price*it.quantity) }}</b>
+            <b class="sub">¥{{ money(it.subtotal) }}</b>
+          </div>
+        </div>
+      </div>
+
+      <!-- 优惠券 -->
+      <div class="card pad">
+        <div class="co-hd"><h3>优惠券</h3></div>
+        <div class="coup-pick" @click="couponOpen=!couponOpen">
+          <span class="coup-cur">
+            <template v-if="usedCoupon">-¥{{ money(pv.price.discount) }} · {{ usedCoupon.name }}</template>
+            <template v-else-if="usableCoupons.length">有 {{ usableCoupons.length }} 张可用</template>
+            <template v-else>暂无可用优惠券</template>
+          </span>
+          <span class="coup-go">{{ couponOpen ? '收起' : '选择' }}<ui-icon name="arrowRight" :size="13"></ui-icon></span>
+        </div>
+        <div class="coup-list" v-if="couponOpen">
+          <div class="coup" :class="{ off: !usableCoupons.length && !unusableCoupons.length }"
+               @click="pickCoupon(null)">
+            <div class="coup-tx"><b>不使用优惠券</b></div>
+            <span class="rd" :class="{ on: !couponId }"></span>
+          </div>
+          <div class="coup" v-for="c in pv.coupons" :key="c.id"
+               :class="{ dis: !c.usable, on: String(couponId)===String(c.id) }"
+               @click="c.usable && pickCoupon(c.id)">
+            <div class="coup-amt"><span>¥</span>{{ money(c.amount) }}</div>
+            <div class="coup-tx">
+              <b>{{ c.name }}</b>
+              <small>{{ c.usable ? ('满 ' + money(c.threshold) + ' 可用') : c.reason }}</small>
+            </div>
+            <span class="rd" :class="{ on: String(couponId)===String(c.id) }"></span>
           </div>
         </div>
       </div>
 
       <!-- 配送与支付 -->
       <div class="card pad">
-        <h3 style="font-size:16px;font-weight:700;margin-bottom:14px">配送与支付</h3>
+        <div class="co-hd"><h3>配送与支付</h3></div>
         <div class="opt-row" style="border-top:none;padding-top:0">
           <div class="k">配送方式</div>
-          <div class="opt"><span class="tag"><ui-icon name="truck" :size="14"></ui-icon> 标准配送（48 小时内发出）</span></div>
+          <div class="opt">
+            <span class="tag"><ui-icon name="truck" :size="14"></ui-icon> 标准配送（48 小时内发出）</span>
+            <span class="tag" v-if="pv.price.freeShipping">已满 {{ money(pv.freeThreshold) }} 免运费</span>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div class="pay-grid">
           <div class="pay-opt" v-for="pm in pays" :key="pm.k" :class="{on:payment===pm.k}" @click="payment=pm.k">
             <span class="g"><ui-icon :name="pm.ic" :size="20"></ui-icon></span>
-            <div><b style="font-size:13.5px">{{ pm.t }}</b><div style="font-size:11.5px;color:var(--ink-3)">{{ pm.d }}</div></div>
-            <span class="rd"></span>
+            <div><b>{{ pm.t }}</b><div class="pay-d">{{ pm.d }}</div></div>
+            <span class="rd" :class="{ on: payment===pm.k }"></span>
           </div>
         </div>
         <div style="margin-top:16px">
           <label class="lbl">订单备注</label>
-          <textarea class="field" rows="2" v-model="remark" placeholder="选填，如：工作日送达、放前台代收"></textarea>
+          <textarea class="field" rows="2" v-model="remark" maxlength="200"
+                    placeholder="选填，如：工作日送达、放前台代收"></textarea>
         </div>
       </div>
     </div>
 
-    <!-- 结算侧栏 -->
-    <div class="card pad" style="position:sticky;top:calc(var(--hdr) + 16px)">
-      <h3 style="font-size:16px;font-weight:700;margin-bottom:14px">订单结算</h3>
-      <div class="sum-line"><span>商品金额</span><span>¥{{ money(subtotal) }}</span></div>
-      <div class="sum-line"><span>商品件数</span><span>{{ checkedCount }} 件</span></div>
-      <div class="sum-line total"><span>预计应付</span><span class="v">¥{{ money(subtotal) }}</span></div>
-      <p style="font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.7">
-        运费与优惠以后端下单结果为准，此处仅显示商品金额小计。
+    <!-- 金额明细 -->
+    <div class="card pad co-side">
+      <h3 class="co-side-t">订单结算</h3>
+      <div class="sum-line"><span>商品金额</span><span>¥{{ money(pv.price.goodsAmount) }}</span></div>
+      <div class="sum-line">
+        <span>运费</span>
+        <span v-if="pv.price.freight>0">＋¥{{ money(pv.price.freight) }}</span>
+        <span v-else class="free">免运费</span>
+      </div>
+      <div class="sum-line" v-if="pv.price.discount>0">
+        <span>优惠券</span><span class="cut">−¥{{ money(pv.price.discount) }}</span>
+      </div>
+      <div class="sum-line total"><span>应付</span><span class="v">¥{{ money(pv.price.payAmount) }}</span></div>
+      <p class="co-tip" v-if="pv.price.freight>0">
+        再买 ¥{{ money(pv.freeThreshold - pv.price.goodsAmount) }} 可免运费
       </p>
 
-      <div style="margin-top:14px;background:#fafbfc;border-radius:var(--r-sm);padding:12px;font-size:12px;color:var(--ink-3);line-height:1.7">
-        <span style="display:inline-flex;align-items:center;gap:5px"><ui-icon name="pin" :size="13"></ui-icon>{{ addr ? fullAddr(addr) : '请选择收货地址' }}</span><br>
-        <span style="display:inline-flex;align-items:center;gap:5px"><ui-icon name="user" :size="13"></ui-icon>{{ addr ? addr.receiverName + ' ' + addr.receiverPhone : '—' }}</span>
+      <div class="co-addr-mini">
+        <span><ui-icon name="pin" :size="13"></ui-icon>{{ addr ? fullAddr(addr) : '请选择收货地址' }}</span>
+        <span><ui-icon name="user" :size="13"></ui-icon>{{ addr ? addr.receiverName + ' ' + addr.receiverPhone : '—' }}</span>
       </div>
 
+      <div class="co-err" v-if="pv && pv.purchasable===false">{{ pv.errorTip }}</div>
+
       <button class="btn btn-lg btn-primary btn-block" style="margin-top:16px"
-              :disabled="!addr || submitting" @click="submit">
+              :disabled="!addr || submitting || (pv && pv.purchasable===false)" @click="submit">
         {{ submitting ? '提交中…' : '提交订单' }}</button>
       <button class="btn btn-block" style="margin-top:10px" @click="go('/cart')">返回购物车</button>
-      <p style="font-size:11.5px;color:var(--ink-3);margin-top:12px;text-align:center;line-height:1.6">
+      <p class="co-tip" style="text-align:center">
         提交订单即表示同意《东华购物用户协议》
       </p>
     </div>
   </div>
 
-  <!-- 新增 / 编辑地址弹窗 -->
+  <!-- 新增地址弹窗 -->
   <div class="mask" v-if="showAddr" @click.self="showAddr=false">
     <div class="modal" style="max-width:460px">
-      <div class="modal-hd"><h3>{{ af.id ? '编辑收货地址' : '新增收货地址' }}</h3>
+      <div class="modal-hd"><h3>新增收货地址</h3>
         <button class="close" @click="showAddr=false">✕</button></div>
       <div class="modal-bd">
         <div class="frow">
@@ -141,8 +188,7 @@ DH.views['checkout-view'] = {
           <input class="field" v-model.trim="af.district" placeholder="如：朝阳区"></div>
         <div style="margin-top:14px"><label class="lbl">详细地址<span class="req">*</span></label>
           <input class="field" v-model.trim="af.detail" placeholder="如：甲 1 号院 2 号楼 303 室"></div>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;color:var(--ink-2)"
-               v-if="!af.id">
+        <label class="co-check">
           <input type="checkbox" class="check" v-model="af.isDefault"> 设为默认收货地址</label>
       </div>
       <div class="modal-ft">
@@ -156,31 +202,44 @@ DH.views['checkout-view'] = {
 
   data: function () {
     return {
-      loading: false, addrId: null, payment: 1, remark: '', submitting: false,
+      loading: false, submitting: false,
+      pv: null, addrId: null, payment: 1, remark: '',
+      couponId: null, couponOpen: false, submitToken: null,
       showAddr: false, saving: false, af: U.blankAddr(),
       pays: [
-        { k: 1, ic: 'card', t: '在线支付', d: '下单后立即付款' },
+        { k: 1, ic: 'card', t: '在线支付', d: '跳转收银台付款' },
         { k: 2, ic: 'cash', t: '货到付款', d: '收到商品再付款' }
       ]
     };
   },
   computed: {
-    items: function () { return this.checkedItems; },
     addr: function () {
       var id = this.addrId;
-      for (var i = 0; i < this.store.addresses.length; i++) {
-        if (String(this.store.addresses[i].id) === String(id)) return this.store.addresses[i];
+      var list = this.store.addresses || [];
+      for (var i = 0; i < list.length; i++) {
+        if (String(list[i].id) === String(id)) return list[i];
       }
       return null;
     },
-    /* 仅商品金额小计；运费与优惠以服务端下单结果为准 */
-    subtotal: function () {
-      return this.items.reduce(function (s, i) { return s + i.price * i.quantity; }, 0);
+    totalQty: function () {
+      return (this.pv ? this.pv.items : []).reduce(function (s, i) { return s + (i.quantity || 0); }, 0);
+    },
+    usableCoupons: function () {
+      return (this.pv ? this.pv.coupons : []).filter(function (c) { return c.usable; });
+    },
+    unusableCoupons: function () {
+      return (this.pv ? this.pv.coupons : []).filter(function (c) { return !c.usable; });
+    },
+    usedCoupon: function () {
+      var id = this.couponId;
+      if (!id) return null;
+      return (this.pv ? this.pv.coupons : []).filter(function (c) {
+        return String(c.id) === String(id);
+      })[0] || null;
     }
   },
   mounted: function () { this.load(); },
   watch: {
-    /* 地址被删掉后 addrId 可能悬空，这里兜底回落到默认地址 */
     'store.addresses': function () {
       if (!this.addr && this.store.addresses.length) this.pickDefault();
     }
@@ -190,14 +249,37 @@ DH.views['checkout-view'] = {
       var self = this;
       if (!this.store.user) return;
       this.loading = true;
-      SVC.loadCats().catch(function () {});
+      SVC.loadCats().catch(noop);
       Promise.all([
-        SVC.loadCart().catch(function () {}),
-        SVC.loadAddresses().catch(function () {})
+        SVC.loadCart().catch(noop),
+        SVC.loadAddresses().catch(noop)
       ]).then(function () {
-        self.loading = false;
         if (!self.addr) self.pickDefault();
+        return self.refreshPreview();
+      }).then(function () {
+        self.loading = false;
+      }, function () {
+        self.loading = false;
       });
+      /* 领取一次性提交令牌，防止连点产生重复订单 */
+      SVC.newSubmitToken().then(function (t) { self.submitToken = t; }, noop);
+    },
+    refreshPreview: function () {
+      var self = this;
+      return SVC.previewOrder(this.couponId).then(function (pv) {
+        self.pv = pv;
+        /* 券失效后服务端不再计入优惠，这里同步清空选中，避免界面与实际不一致 */
+        if (self.couponId && !(pv.price && String(pv.price.couponId) === String(self.couponId))) {
+          self.couponId = null;
+        }
+      }, function (e) {
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    pickCoupon: function (id) {
+      this.couponId = id;
+      this.couponOpen = false;
+      this.refreshPreview();
     },
     pickDefault: function () {
       var list = this.store.addresses;
@@ -223,12 +305,12 @@ DH.views['checkout-view'] = {
         district: a.district,
         detail: a.detail,
         isDefault: a.isDefault ? 1 : 0
-      }, a.id).then(function (d) {
+      }, null).then(function (d) {
         self.toast('收货地址已保存', '✅');
         self.showAddr = false;
         return SVC.loadAddresses().then(function () {
           if (d && d.id) self.addrId = d.id;
-        }, function () {});
+        }, noop);
       }, function (e) {
         if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
       }).then(function () { self.saving = false; }, function () { self.saving = false; });
@@ -236,21 +318,34 @@ DH.views['checkout-view'] = {
     submit: function () {
       var self = this;
       if (!this.addr) return this.toast('请先选择收货地址', '⚠️');
-      if (!this.items.length) return this.toast('没有可结算的商品', '⚠️');
+      if (!this.pv || !this.pv.items.length) return this.toast('没有可结算的商品', '⚠️');
+      if (this.pv.purchasable === false) return this.toast(this.pv.errorTip || '商品不可购买', '⚠️');
       this.submitting = true;
-      SVC.createOrder(this.addr.id, this.payment, this.remark).then(function () {
+      SVC.createOrder({
+        addressId: this.addr.id,
+        payment: this.payment,
+        remark: this.remark || '',
+        couponId: this.couponId,
+        submitToken: this.submitToken
+      }).then(function (order) {
+        self.submitting = false;
+        /* 令牌已消费，立即置空避免二次提交复用 */
+        self.submitToken = null;
         self.toast('订单提交成功', '🎉');
-        return Promise.all([
-          SVC.loadCart().catch(function () {}),
-          SVC.loadOrders().catch(function () {})
-        ]).then(function () { self.go('/orders'); });
+        SVC.loadCart().catch(noop);
+        SVC.loadOrders().catch(noop);
+        /* 货到付款无需支付，直接看订单；在线支付跳收银台 */
+        if (Number(order.payment) === 2) self.go('/order/' + order.orderNo);
+        else self.go('/pay/' + order.orderNo);
       }, function (e) {
-        if (e !== U.HANDLED) {
-          self.toast(U.errMsg(e), '⚠️');
-          /* 库存不足 / 购物车为空等，刷新购物车让最新状态可见 */
-          SVC.loadCart().catch(function () {});
-        }
-      }).then(function () { self.submitting = false; }, function () { self.submitting = false; });
+        self.submitting = false;
+        if (e === U.HANDLED) return;
+        self.toast(U.errMsg(e), '⚠️');
+        /* 商品/库存变化会导致试算失效，重新拉一次让用户看到最新状态 */
+        SVC.loadCart().catch(noop);
+        self.refreshPreview();
+        SVC.newSubmitToken().then(function (t) { self.submitToken = t; }, noop);
+      });
     }
   }
 };

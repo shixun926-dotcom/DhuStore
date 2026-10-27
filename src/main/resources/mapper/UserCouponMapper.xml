@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.UserCouponMapper">
+
+    <insert id="insert" parameterType="UserCoupon" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `user_coupon` (user_id, coupon_id, status)
+        VALUES (#{userId}, #{couponId}, 0)
+    </insert>
+
+    <select id="findById" resultType="UserCoupon">
+        SELECT id, user_id, coupon_id, status, order_no, used_time, create_time
+        FROM `user_coupon` WHERE id = #{id}
+    </select>
+
+    <select id="findByIdAndUser" resultType="UserCoupon">
+        SELECT id, user_id, coupon_id, status, order_no, used_time, create_time
+        FROM `user_coupon` WHERE id = #{id} AND user_id = #{userId}
+    </select>
+
+    <select id="countByUserAndCoupon" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM `user_coupon` WHERE user_id = #{userId} AND coupon_id = #{couponId}
+    </select>
+
+    <!-- 我的可用券：未使用 + 模板启用 + 在有效期内 -->
+    <select id="findUnusedByUser" resultType="com.wenhe.dhustore.dto.CouponVO">
+        SELECT uc.id,
+               c.id AS coupon_id,
+               c.name,
+               c.threshold,
+               c.amount,
+               c.scope,
+               c.category_id,
+               c.end_time
+        FROM `user_coupon` uc
+        JOIN `coupon` c ON c.id = uc.coupon_id
+        WHERE uc.user_id = #{userId}
+          AND uc.status = 0
+          AND c.status = 1
+          AND (c.end_time IS NULL OR c.end_time &gt;= NOW())
+        ORDER BY c.amount DESC, c.threshold ASC
+    </select>
+
+    <update id="markUsed">
+        UPDATE `user_coupon`
+        SET status = 1, order_no = #{orderNo}, used_time = NOW()
+        WHERE id = #{id} AND user_id = #{userId} AND status = 0
+    </update>
+
+    <update id="release">
+        UPDATE `user_coupon`
+        SET status = 0, order_no = NULL, used_time = NULL
+        WHERE order_no = #{orderNo} AND user_id = #{userId} AND status = 1
+    </update>
+
+</mapper>

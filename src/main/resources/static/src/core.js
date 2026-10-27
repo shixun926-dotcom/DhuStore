@@ -139,10 +139,13 @@ var PROMOS = [
 ];
 var STATUS = {
   0: { text: '待付款', ic: 'clock', color: '#d03b3b' },
-  1: { text: '已付款', ic: 'cash', color: '#eda100' },
-  2: { text: '已发货', ic: 'truck', color: '#2a78d6' },
+  1: { text: '待发货', ic: 'cash', color: '#eda100' },
+  2: { text: '待收货', ic: 'truck', color: '#2a78d6' },
   3: { text: '已完成', ic: 'check', color: '#0ca30c' },
-  4: { text: '已取消', ic: 'close', color: '#898781' }
+  4: { text: '已取消', ic: 'close', color: '#898781' },
+  5: { text: '已关闭', ic: 'close', color: '#898781' },
+  6: { text: '退款中', ic: 'rotate', color: '#eda100' },
+  7: { text: '退款完成', ic: 'shield', color: '#0a7a0a' }
 };
 function statusOf(s) {
   return STATUS[Number(s)] || { text: '未知状态', ic: 'dot', color: '#898781' };
@@ -254,6 +257,8 @@ var ROUTES = [
   { re: /^\/cart$/, name: 'cart' },
   { re: /^\/checkout$/, name: 'checkout' },
   { re: /^\/orders$/, name: 'orders' },
+  { re: /^\/order\/([A-Za-z0-9]+)$/, name: 'order', keys: ['no'] },
+  { re: /^\/pay\/([A-Za-z0-9]+)$/, name: 'pay', keys: ['no'] },
   { re: /^\/user$/, name: 'user' },
   { re: /^\/admin$/, name: 'admin' }
 ];

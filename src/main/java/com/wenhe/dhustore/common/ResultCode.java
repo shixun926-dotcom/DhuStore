@@ -40,7 +40,18 @@ public enum ResultCode {
     MESSAGE_EMPTY(3003, "消息内容不能为空"),
     MESSAGE_TO_SELF(3004, "不能给自己发消息"),
     MESSAGE_TYPE_ERROR(3005, "消息类型不正确"),
-    MESSAGE_IMAGE_INVALID(3006, "图片地址不合法");
+    MESSAGE_IMAGE_INVALID(3006, "图片地址不合法"),
+
+    COUPON_LIMIT(3010, "该优惠券已达领取上限"),
+    COUPON_SOLD_OUT(3011, "优惠券已领完"),
+    COUPON_INVALID(3012, "优惠券不可用"),
+    ORDER_SUBMIT_DUPLICATE(3013, "订单正在处理中，请勿重复提交"),
+    ORDER_EXPIRED(3014, "订单已超时关闭"),
+    PAYMENT_NOT_FOUND(3015, "支付单不存在"),
+    PAYMENT_CLOSED(3016, "支付已关闭，请重新下单"),
+    PAYMENT_DUPLICATE(3017, "该订单已支付"),
+    REFUND_NOT_ALLOWED(3018, "当前订单状态不支持退款"),
+    REFUND_EXISTS(3019, "该订单已有进行中的售后申请");
 
     private final int code;
     private final String message;

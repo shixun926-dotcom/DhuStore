@@ -13,4 +13,13 @@ public class OrderCreateRequest {
     private Integer payment;
 
     private String remark;
+
+    /** 使用哪张用户券（user_coupon.id），不传表示不使用 */
+    private Long couponId;
+
+    /**
+     * 提交令牌：进入结算页时申请，提交后消费。
+     * 同一令牌重复提交只会产生一笔订单，服务端据此返回已创建的订单。
+     */
+    private String submitToken;
 }

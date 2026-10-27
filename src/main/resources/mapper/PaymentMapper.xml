@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.PaymentMapper">
+
+    <sql id="cols">id, payment_no, order_no, user_id, channel, amount, status, paid_time,
+        callback_no, create_time, update_time</sql>
+
+    <insert id="insert" parameterType="Payment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `payment` (payment_no, order_no, user_id, channel, amount, status)
+        VALUES (#{paymentNo}, #{orderNo}, #{userId}, #{channel}, #{amount}, 0)
+    </insert>
+
+    <select id="findByPaymentNo" resultType="Payment">
+        SELECT <include refid="cols"/> FROM `payment` WHERE payment_no = #{paymentNo}
+    </select>
+
+    <select id="findSuccessByOrderNo" resultType="Payment">
+        SELECT <include refid="cols"/> FROM `payment`
+        WHERE order_no = #{orderNo} AND status = 1
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <select id="findLatestByOrderNo" resultType="Payment">
+        SELECT <include refid="cols"/> FROM `payment`
+        WHERE order_no = #{orderNo}
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <!-- 只有待支付的单能被置为成功；callback_no 唯一键兜住网关的重复回调 -->
+    <update id="markSuccess">
+        UPDATE `payment`
+        SET status = 1, callback_no = #{callbackNo}, paid_time = #{paidTime}
+        WHERE payment_no = #{paymentNo} AND status = 0
+    </update>
+
+    <update id="markClosed">
+        UPDATE `payment` SET status = 3 WHERE payment_no = #{paymentNo} AND status = 0
+    </update>
+
+    <update id="closeByOrderNo">
+        UPDATE `payment` SET status = 3 WHERE order_no = #{orderNo} AND status = 0
+    </update>
+
+</mapper>

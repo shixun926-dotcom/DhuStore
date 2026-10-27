@@ -2,8 +2,10 @@ package com.wenhe.dhustore.controller;
 
 import com.wenhe.dhustore.annotation.RequireAdmin;
 import com.wenhe.dhustore.annotation.RequireLogin;
+import com.wenhe.dhustore.common.PageResult;
 import com.wenhe.dhustore.common.Result;
 import com.wenhe.dhustore.dto.OrderCreateRequest;
+import com.wenhe.dhustore.dto.OrderPreviewVO;
 import com.wenhe.dhustore.dto.OrderVO;
 import com.wenhe.dhustore.service.OrderService;
 import com.wenhe.dhustore.util.UserContext;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -26,16 +29,56 @@ public class OrderController {
 
     private final OrderService orderService;
 
+    /** 结算页试算：金额明细 + 可用券 + 商品可购买性 */
+    @GetMapping("/preview")
+    @RequireLogin
+    public Result<OrderPreviewVO> preview(@RequestParam(required = false) Long couponId) {
+        return Result.success(orderService.preview(UserContext.getUserId(), couponId));
+    }
+
+    /** 一次性提交令牌，进入结算页时领取，提交订单时回传 */
+    @PostMapping("/submit-token")
+    @RequireLogin
+    public Result<Map<String, String>> submitToken() {
+        return Result.success(Map.of("token", orderService.newSubmitToken(UserContext.getUserId())));
+    }
+
     @PostMapping
     @RequireLogin
     public Result<OrderVO> create(@Valid @RequestBody OrderCreateRequest req) {
         return Result.success(orderService.create(UserContext.getUserId(), req));
     }
 
+    /**
+     * 订单列表：statuses 支持逗号分隔的多状态（如 6,7 表示全部售后），为空返回全部。
+     * 服务端分页，前端不再一次性拉全量。
+     */
     @GetMapping
     @RequireLogin
-    public Result<List<OrderVO>> list() {
-        return Result.success(orderService.list(UserContext.getUserId()));
+    public Result<PageResult<OrderVO>> list(
+            @RequestParam(required = false) String statuses,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return Result.success(orderService.page(UserContext.getUserId(), parseStatuses(statuses), page, size));
+    }
+
+    /** "6,7" → [6, 7]；空串返回 null 表示不过滤 */
+    private java.util.List<Integer> parseStatuses(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        java.util.List<Integer> list = new java.util.ArrayList<>();
+        for (String part : raw.split(",")) {
+            String t = part.trim();
+            if (!t.isEmpty()) {
+                try {
+                    list.add(Integer.parseInt(t));
+                } catch (NumberFormatException ignored) {
+                    /* 非法值直接忽略，不影响其余状态筛选 */
+                }
+            }
+        }
+        return list.isEmpty() ? null : list;
     }
 
     @GetMapping("/summary")
@@ -50,17 +93,12 @@ public class OrderController {
         return Result.success(orderService.detail(UserContext.getUserId(), orderNo));
     }
 
-    @PostMapping("/{orderNo}/pay")
-    @RequireLogin
-    public Result<Void> pay(@PathVariable String orderNo) {
-        orderService.pay(UserContext.getUserId(), orderNo);
-        return Result.success();
-    }
-
+    /** 取消订单，可带原因（仅待付款） */
     @PostMapping("/{orderNo}/cancel")
     @RequireLogin
-    public Result<Void> cancel(@PathVariable String orderNo) {
-        orderService.cancel(UserContext.getUserId(), orderNo);
+    public Result<Void> cancel(@PathVariable String orderNo,
+                               @RequestParam(required = false) String reason) {
+        orderService.cancel(UserContext.getUserId(), orderNo, reason);
         return Result.success();
     }
 

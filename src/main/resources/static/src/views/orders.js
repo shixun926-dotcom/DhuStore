@@ -1,7 +1,6 @@
 /* ==========================================================================
-   views/orders.js — 我的订单：状态筛选 / 付款 / 取消 / 确认收货 / 再次购买
-   订单一次取回后在本地分页与筛选：服务端排序固定为 id DESC，前端筛选再叠加
-   服务端分页会互相打架，索性一次取够（size=200）在本地切。
+   views/orders.js — 我的订单：七态筛选 + 服务端分页 + 按状态给出可执行动作
+   详情统一跳 #/order/{orderNo}，列表页不再承载详情弹窗。
    ========================================================================== */
 window.DH = window.DH || {};
 DH.views = DH.views || {};
@@ -10,12 +9,13 @@ DH.views = DH.views || {};
 'use strict';
 
 var SVC = DH.services, U = DH.util;
+var noop = function () {};
 
 DH.views['orders-view'] = {
   template: `
 <div>
   <div class="sec-hd" style="margin-top:22px">
-    <div><div class="sec-title">我的订单</div><div class="sec-sub">共 {{ store.orders.length }} 笔订单</div></div>
+    <div><div class="sec-title">我的订单</div><div class="sec-sub">共 {{ total }} 笔订单</div></div>
   </div>
 
   <div v-if="!store.user" class="state card">
@@ -26,10 +26,8 @@ DH.views['orders-view'] = {
 
   <template v-else>
     <div class="bar">
-      <button v-for="t in tabs" :key="t.k" class="pill" :class="{on:tab===t.k}" @click="tab=t.k">
+      <button v-for="t in tabs" :key="t.k" class="pill" :class="{on:tab===t.k}" @click="switchTab(t.k)">
         <ui-icon :name="t.ic" :size="16"></ui-icon>{{ t.t }}
-        <span v-if="t.k==='2' && store.pending>0" class="pill-badge">{{ store.pending }}</span>
-        <span v-else-if="cntOf(t.k)" style="opacity:.7">{{ cntOf(t.k) }}</span>
       </button>
     </div>
 
@@ -45,7 +43,8 @@ DH.views['orders-view'] = {
         <div class="order-hd">
           <span>订单号 <span class="no">{{ o.orderNo }}</span></span>
           <span>{{ fmt(o.createTime) }}</span>
-          <span class="st" :style="{color:status(o.status).color}">{{ status(o.status).icon }} {{ status(o.status).text }}</span>
+          <span class="st" :style="{color:status(o.status).color}">
+            <ui-icon :name="status(o.status).ic" :size="14"></ui-icon> {{ o.statusText || status(o.status).text }}</span>
         </div>
         <div class="order-bd">
           <div class="order-goods">
@@ -59,26 +58,32 @@ DH.views['orders-view'] = {
               <div class="pr">¥{{ money(g.unitPrice) }} × {{ g.quantity }}</div>
             </div>
           </div>
-          <div style="width:190px;flex:none;text-align:right">
-            <div style="font-size:12px;color:var(--ink-3)">共 {{ itemCount(o) }} 件商品</div>
-            <div style="margin-top:8px;font-size:13px;color:var(--ink-2)">实付</div>
-            <div style="font-size:24px;font-weight:800;color:var(--brand);letter-spacing:-.6px;font-variant-numeric:tabular-nums">
-              ¥{{ money(o.totalPrice) }}</div>
+          <div class="order-sum">
+            <div class="order-qty">共 {{ itemCount(o) }} 件商品</div>
+            <div class="order-pay">实付</div>
+            <div class="order-amt">¥{{ money(o.payAmount || o.totalPrice) }}</div>
+            <div class="order-fee" v-if="o.freight>0 || o.discount>0">
+              <template v-if="o.freight>0">含运费 ¥{{ money(o.freight) }}</template>
+              <template v-if="o.freight>0 && o.discount>0"> · </template>
+              <template v-if="o.discount>0">优惠 −¥{{ money(o.discount) }}</template>
+            </div>
           </div>
         </div>
         <div class="order-ft">
           <span class="amt">{{ payText(o.payment) }}</span>
-          <button class="btn btn-sm" @click="detail(o)">订单详情</button>
-          <button class="btn btn-sm" v-if="o.status===0" :disabled="busy" @click="cancel(o)">取消订单</button>
-          <button class="btn btn-sm btn-primary" v-if="o.status===0" :disabled="busy" @click="payNow(o)">立即付款</button>
+          <button class="btn btn-sm" @click="go('/order/' + o.orderNo)">订单详情</button>
+          <button class="btn btn-sm" v-if="o.status===0" :disabled="busy" @click="openCancel(o)">取消订单</button>
+          <button class="btn btn-sm" v-if="canRefund(o)" :disabled="busy" @click="go('/order/' + o.orderNo)">申请售后</button>
+          <button class="btn btn-sm btn-primary" v-if="o.status===0" :disabled="busy"
+                  @click="go('/pay/' + o.orderNo)">去支付</button>
           <button class="btn btn-sm btn-primary" v-if="o.status===2" :disabled="busy" @click="receive(o)">确认收货</button>
-          <button class="btn btn-sm btn-ghost" v-if="o.status===3||o.status===4" :disabled="busy" @click="rebuy(o)">再次购买</button>
+          <button class="btn btn-sm btn-ghost" v-if="canRebuy(o)" :disabled="busy" @click="rebuy(o)">再次购买</button>
         </div>
       </div>
       <div class="pager" v-if="pages>1">
-        <button :disabled="page<=1" @click="page--">‹</button>
-        <button v-for="n in pages" :key="n" :class="{on:page===n}" @click="page=n">{{ n }}</button>
-        <button :disabled="page>=pages" @click="page++">›</button>
+        <button :disabled="page<=1" @click="goto(page-1)">‹</button>
+        <button v-for="n in pages" :key="n" :class="{on:page===n}" @click="goto(n)">{{ n }}</button>
+        <button :disabled="page>=pages" @click="goto(page+1)">›</button>
       </div>
     </template>
 
@@ -88,119 +93,119 @@ DH.views['orders-view'] = {
     </div>
   </template>
 
-  <!-- 订单详情 -->
-  <div class="mask" v-if="cur" @click.self="cur=null">
-    <div class="modal">
-      <div class="modal-hd"><h3>订单详情</h3><button class="close" @click="cur=null">✕</button></div>
+  <!-- 取消订单：选原因 -->
+  <div class="mask" v-if="cancelTarget" @click.self="cancelTarget=null">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-hd"><h3>取消订单</h3><button class="close" @click="cancelTarget=null">✕</button></div>
       <div class="modal-bd">
-        <div style="background:#fafbfc;border-radius:var(--r);padding:16px;margin-bottom:18px">
-          <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:9px;gap:12px">
-            <span style="color:var(--ink-3);flex:none">订单编号</span><span class="num">{{ cur.orderNo }}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:9px;gap:12px">
-            <span style="color:var(--ink-3);flex:none">下单时间</span><span>{{ fmt(cur.createTime) }}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:9px;gap:12px">
-            <span style="color:var(--ink-3);flex:none">订单状态</span>
-            <span :style="{color:status(cur.status).color,fontWeight:600}">{{ status(cur.status).icon }} {{ status(cur.status).text }}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13.5px;gap:12px">
-            <span style="color:var(--ink-3);flex:none">支付方式</span><span>{{ payText(cur.payment) }}</span></div>
-          <div v-if="cur.paymentTime" style="display:flex;justify-content:space-between;font-size:13.5px;margin-top:9px;gap:12px">
-            <span style="color:var(--ink-3);flex:none">付款时间</span><span>{{ fmt(cur.paymentTime) }}</span></div>
-        </div>
-
-        <h4 style="font-size:13px;color:var(--ink-3);margin-bottom:10px">收货信息</h4>
-        <div style="font-size:13.5px;line-height:1.8;margin-bottom:18px">
-          {{ cur.receiverName }}　{{ cur.receiverPhone }}<br>
-          <span style="color:var(--ink-2)">{{ cur.receiverAddress }}</span>
-        </div>
-
-        <h4 style="font-size:13px;color:var(--ink-3);margin-bottom:10px">商品清单</h4>
-        <div v-for="(g,i) in cur.items" :key="i"
-             style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line-2)">
-          <div class="thumb" style="width:48px;border-radius:6px;--fs:22px" :style="{'--h':hueOf(g.productId)}">
-            <ui-icon name="box"></ui-icon>
-            <img v-if="g.productImage" :src="g.productImage" alt="" class="gone"
-                 @load="$event.target.classList.remove('gone')" @error="$event.target.classList.add('gone')">
-          </div>
-          <div style="flex:1;font-size:13.5px">{{ g.productName }}
-            <div style="font-size:12px;color:var(--ink-3)">¥{{ money(g.unitPrice) }} × {{ g.quantity }}</div></div>
-          <b style="color:var(--brand)">¥{{ money(g.totalPrice) }}</b>
-        </div>
-        <div v-if="cur.remark" style="margin-top:14px;font-size:13px;color:var(--ink-3)">备注：{{ cur.remark }}</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)">
-          <span style="font-weight:600">实付金额</span>
-          <span style="font-size:24px;font-weight:800;color:var(--brand);letter-spacing:-.6px">¥{{ money(cur.totalPrice) }}</span>
+        <p class="rf-tip">取消后库存与已使用的优惠券会自动退回。</p>
+        <label class="lbl">取消原因</label>
+        <div class="rs-list">
+          <label class="rs" v-for="r in reasons" :key="r">
+            <input type="radio" class="check" :value="r" v-model="cancelReason">{{ r }}
+          </label>
         </div>
       </div>
-      <div class="modal-ft"><button class="btn btn-primary" @click="cur=null">关闭</button></div>
+      <div class="modal-ft">
+        <button class="btn" @click="cancelTarget=null">再想想</button>
+        <button class="btn btn-primary" :disabled="busy" @click="doCancel">确认取消</button>
+      </div>
     </div>
   </div>
 </div>`,
 
-  data: function () { return { tab: 'all', page: 1, size: 5, cur: null, loading: false, err: '' }; },
+  data: function () {
+    return {
+      tab: 'all', page: 1, size: 5,
+      loading: false, err: '', busy: false,
+      list: [], total: 0, pages: 1,
+      cancelTarget: null, cancelReason: '不想要了',
+      reasons: ['不想要了', '信息填写错误', '未及时付款', '重复下单', '其他']
+    };
+  },
   computed: {
     tabs: function () {
       return [
-        { k: 'all', t: '全部', ic: 'grid' },
-        { k: '0', t: '待付款', ic: 'wallet' },
-        { k: '1', t: '待发货', ic: 'box' },
-        { k: '2', t: '待收货', ic: 'truck' },
-        { k: '3', t: '已完成', ic: 'check' },
-        { k: '4', t: '已取消', ic: 'close' }
+        { k: 'all', t: '全部', ic: 'grid', s: null },
+        { k: '0', t: '待付款', ic: 'wallet', s: '0' },
+        { k: '1', t: '待发货', ic: 'box', s: '1' },
+        { k: '2', t: '待收货', ic: 'truck', s: '2' },
+        { k: '3', t: '已完成', ic: 'check', s: '3' },
+        { k: 'refund', t: '退款/售后', ic: 'rotate', s: '6,7' },
+        { k: 'closed', t: '已取消', ic: 'close', s: '4,5' }
       ];
-    },
-    filtered: function () {
-      if (this.tab === 'all') return this.store.orders;
-      var t = Number(this.tab);
-      return this.store.orders.filter(function (o) { return Number(o.status) === t; });
-    },
-    list: function () {
-      return this.filtered.slice((this.page - 1) * this.size, this.page * this.size);
-    },
-    pages: function () { return Math.max(1, Math.ceil(this.filtered.length / this.size)); }
+    }
   },
   mounted: function () { this.load(); },
-  watch: {
-    tab: function () { this.page = 1; },
-    pages: function (v) { if (this.page > v) this.page = v; }
-  },
   methods: {
+    statusOf: function (k) {
+      var t = this.tabs.filter(function (x) { return x.k === k; })[0];
+      return t ? t.s : null;
+    },
     load: function () {
       var self = this;
       if (!this.store.user) return;
       this.loading = true;
       this.err = '';
-      SVC.loadOrders().then(function () {
+      SVC.pageOrders(this.statusOf(this.tab), this.page, this.size).then(function (d) {
+        self.list = d.list || [];
+        self.total = Number(d.total) || 0;
+        self.pages = Math.max(1, Number(d.totalPages) || 1);
         self.loading = false;
       }, function (e) {
         self.loading = false;
         if (e !== U.HANDLED) self.err = U.errMsg(e);
       });
     },
-    cntOf: function (k) {
-      if (k === 'all') return 0;
-      var t = Number(k);
-      return this.store.orders.filter(function (o) { return Number(o.status) === t; }).length;
+    switchTab: function (k) {
+      this.tab = k;
+      this.page = 1;
+      this.load();
     },
-    detail: function (o) { this.cur = o; },
-    /* 0→1 付款（后端已有接口） */
-    payNow: function (o) {
+    goto: function (n) {
+      if (n < 1 || n > this.pages) return;
+      this.page = n;
+      this.load();
+    },
+    itemCount: function (o) {
+      return (o.items || []).reduce(function (s, g) { return s + (Number(g.quantity) || 0); }, 0);
+    },
+    canRefund: function (o) {
+      return o.status === 1 || o.status === 2 || o.status === 3;
+    },
+    canRebuy: function (o) {
+      return o.status === 3 || o.status === 4 || o.status === 5 || o.status === 7;
+    },
+    openCancel: function (o) {
+      this.cancelTarget = o;
+      this.cancelReason = '不想要了';
+    },
+    doCancel: function () {
       var self = this;
-      SVC.payOrder(o).then(function () { self.cur = null; });
+      var o = this.cancelTarget;
+      if (!o) return;
+      this.busy = true;
+      SVC.cancelOrder(o, this.cancelReason).then(function () {
+        self.busy = false;
+        self.cancelTarget = null;
+        self.load();
+      }, function () { self.busy = false; });
     },
-    /* 0→4 取消（后端已有接口） */
-    cancel: function (o) {
-      var self = this;
-      SVC.cancelOrder(o).then(function () { self.cur = null; });
-    },
-    /* 2→3 确认收货：契约接口，后端未实现时降级提示 */
     receive: function (o) {
       var self = this;
-      SVC.confirmOrder(o).then(function () { self.cur = null; });
+      this.busy = true;
+      DH.api.request('POST', '/orders/' + o.orderNo + '/confirm').then(function () {
+        self.busy = false;
+        self.toast('已确认收货', '✅');
+        self.load();
+        SVC.loadOrders().catch(noop);
+      }, function (e) {
+        self.busy = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
     },
-    /* 再次购买：逐项加回购物车后跳购物车 */
     rebuy: function (o) {
-      var self = this;
-      SVC.rebuyOrder(o).then(function (ok) { if (ok) self.go('/cart'); });
+      SVC.rebuyOrder(o).then(function (ok) { if (ok) DH.router.go('/cart'); });
     }
   }
 };

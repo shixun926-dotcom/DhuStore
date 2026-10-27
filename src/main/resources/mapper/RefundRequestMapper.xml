@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.RefundRequestMapper">
+
+    <sql id="cols">id, refund_no, order_no, user_id, type, amount, reason, images, status,
+        audit_remark, audit_time, create_time</sql>
+
+    <insert id="insert" parameterType="RefundRequest" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `refund_request` (refund_no, order_no, user_id, type, amount, reason, images, status)
+        VALUES (#{refundNo}, #{orderNo}, #{userId}, #{type}, #{amount}, #{reason}, #{images}, 0)
+    </insert>
+
+    <select id="findByRefundNo" resultType="RefundRequest">
+        SELECT <include refid="cols"/> FROM `refund_request` WHERE refund_no = #{refundNo}
+    </select>
+
+    <!-- 同一订单同时只允许一条进行中的售后单 -->
+    <select id="findProcessingByOrderNo" resultType="RefundRequest">
+        SELECT <include refid="cols"/> FROM `refund_request`
+        WHERE order_no = #{orderNo} AND status IN (0, 1)
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <select id="findByUserId" resultType="RefundRequest">
+        SELECT <include refid="cols"/> FROM `refund_request`
+        WHERE user_id = #{userId} ORDER BY id DESC
+    </select>
+
+    <select id="findAll" resultType="RefundRequest">
+        SELECT <include refid="cols"/> FROM `refund_request`
+        <where>
+            <if test="status != null">status = #{status}</if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <update id="audit">
+        UPDATE `refund_request`
+        SET status = #{status}, audit_remark = #{remark}, audit_time = NOW()
+        WHERE refund_no = #{refundNo} AND status = 0
+    </update>
+
+</mapper>

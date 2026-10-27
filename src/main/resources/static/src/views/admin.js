@@ -434,6 +434,57 @@ DH.views['admin-view'] = {
         </div>
       </div>
 
+      <!-- ============ 售后审核 ============ -->
+      <div v-else-if="tab==='refund'" class="tablewrap">
+        <div class="tbl-hd">
+          <h3>售后审核</h3>
+          <select class="field" style="width:150px" v-model="refundStatus" @change="loadRefundList">
+            <option value="">全部状态</option>
+            <option value="0">待审核</option>
+            <option value="3">已退款</option>
+            <option value="2">已拒绝</option>
+          </select>
+          <button class="btn" :disabled="refundLoading" @click="loadRefundList">查询</button>
+        </div>
+
+        <div v-if="refundLoading" class="state"><div class="spin"></div><div class="d">正在加载售后单…</div></div>
+
+        <div v-else style="overflow:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:170px">售后单号</th><th style="width:170px">订单号</th>
+                <th style="width:90px">类型</th><th style="width:110px">退款金额</th>
+                <th style="width:150px">原因</th><th style="width:100px">状态</th>
+                <th style="width:150px">申请时间</th><th style="width:160px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in refunds" :key="r.id">
+                <td class="num" style="font-size:12.5px">{{ r.refundNo }}</td>
+                <td class="num" style="font-size:12.5px">{{ r.orderNo }}</td>
+                <td>{{ r.type === 2 ? '退货退款' : '仅退款' }}</td>
+                <td class="num" style="color:var(--brand);font-weight:700">¥{{ money(r.amount) }}</td>
+                <td style="font-size:12.5px">{{ r.reason }}</td>
+                <td><span class="tg" :style="{color:refundStatusOf(r.status).color}">
+                  <span class="dot" :style="{background:refundStatusOf(r.status).color}"></span>{{ refundStatusOf(r.status).text }}</span></td>
+                <td class="num" style="font-size:12.5px;color:var(--ink-3)">{{ fmt(r.createTime) }}</td>
+                <td>
+                  <template v-if="r.status === 0">
+                    <button class="btn btn-sm btn-primary" :disabled="refundBusy" @click="auditRefund(r, true)">同意</button>
+                    <button class="btn btn-sm" :disabled="refundBusy" @click="auditRefund(r, false)">拒绝</button>
+                  </template>
+                  <span v-else style="font-size:12.5px;color:var(--ink-3)">{{ r.auditRemark || '—' }}</span>
+                </td>
+              </tr>
+              <tr v-if="!refunds.length">
+                <td colspan="8" style="text-align:center;padding:40px;color:var(--ink-3)">暂无售后单</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- ============ 分类管理 ============ -->
       <div v-else-if="tab==='cats'" class="tablewrap">
         <div class="tbl-hd">
@@ -875,6 +926,7 @@ DH.views['admin-view'] = {
         { k: 'cats', ic: 'folder', t: '分类管理' },
         { k: 'orders', ic: 'receipt', t: '订单管理' },
         { k: 'apply', ic: 'file', t: '发布申请' },
+        { k: 'refund', ic: 'rotate', t: '售后审核' },
         { k: 'banner', ic: 'image', t: '首页图片' },
         { k: 'flash', ic: 'bolt', t: '限时秒杀' }
       ],
@@ -892,6 +944,7 @@ DH.views['admin-view'] = {
       fsPick: false, fsPickTarget: null, fsKw: '', fsProducts: [], fsSearching: false, fsDel: null,
       aorders: [], aordLoading: false, aordErr: '', aordUnsupported: false, ostatus: '',
       applies: [], applyLoading: false, applyErr: '', aStatus: '',
+      refunds: [], refundLoading: false, refundStatus: '0', refundBusy: false,
       /* 首页轮播 */
       banners: [], banLoading: false, banErr: '', banUploading: false, banSlot: 0, banDel: null,
       /* 首页促销位：saved 为已保存值，draft 为编辑中的值，点保存才落库 */
@@ -1049,6 +1102,7 @@ DH.views['admin-view'] = {
       if (v === 'goods' && !this.goods.length && !this.goodsLoading) this.loadGoods();
       if (v === 'orders' && !this.aorders.length && !this.aordLoading) this.loadAdminOrders();
       if (v === 'apply' && !this.applies.length && !this.applyLoading) this.loadApplies();
+      if (v === 'refund' && !this.refunds.length && !this.refundLoading) this.loadRefundList();
     },
     /* 登录后（或换账号）自动拉统计与待处理订单数 */
     isAdmin: function (v) { if (v) { this.loadStats(); SVC.loadPending(); } }
@@ -1267,6 +1321,40 @@ DH.views['admin-view'] = {
         self.saving = false;
         if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
       });
+    },
+    loadRefundList: function () {
+      var self = this;
+      this.refundLoading = true;
+      var q = this.refundStatus === '' ? '' : ('?status=' + this.refundStatus);
+      DH.api.request('GET', '/admin/refunds' + q).then(function (d) {
+        self.refunds = U.listOf(d);
+        self.refundLoading = false;
+      }, function (e) {
+        self.refundLoading = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    auditRefund: function (r, agree) {
+      var self = this;
+      if (!agree && !window.confirm('确认拒绝该售后申请？订单将退回原状态。')) return;
+      this.refundBusy = true;
+      DH.api.request('POST', '/admin/refunds/' + r.refundNo + '/audit',
+        { agree: agree, remark: agree ? '审核通过' : '不符合退款条件' }).then(function () {
+        self.refundBusy = false;
+        self.toast(agree ? '已同意退款' : '已拒绝申请', agree ? '✅' : '🚫');
+        self.loadRefundList();
+      }, function (e) {
+        self.refundBusy = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    refundStatusOf: function (s) {
+      var n = Number(s);
+      if (n === 0) return { text: '待审核', color: '#eda100' };
+      if (n === 1) return { text: '已同意', color: '#2a78d6' };
+      if (n === 2) return { text: '已拒绝', color: '#d03b3b' };
+      if (n === 3) return { text: '已退款', color: '#0a7a0a' };
+      return { text: '未知', color: '#898781' };
     },
     applyStatus: function (s) {
       var n = Number(s);

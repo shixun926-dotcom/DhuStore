@@ -132,19 +132,30 @@ CREATE TABLE IF NOT EXISTS `orders` (
     `id`               BIGINT         NOT NULL AUTO_INCREMENT,
     `order_no`         VARCHAR(32)    NOT NULL COMMENT '订单号',
     `user_id`          BIGINT         NOT NULL,
-    `total_price`      DECIMAL(10, 2) NOT NULL COMMENT '订单总额',
+    `total_price`      DECIMAL(10, 2) NOT NULL COMMENT '订单总额（= pay_amount，兼容旧口径）',
+    `goods_amount`     DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT '商品金额合计',
+    `freight`          DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT '运费',
+    `discount`         DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT '优惠金额',
+    `pay_amount`       DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT '应付金额=商品+运费-优惠',
+    `coupon_id`        BIGINT         DEFAULT NULL COMMENT '使用的用户券 ID',
     `payment`          TINYINT        NOT NULL DEFAULT 1 COMMENT '1-在线 2-货到付款',
-    `status`           TINYINT        NOT NULL DEFAULT 0 COMMENT '0-待付款 1-已付款 2-已发货 3-已完成 4-已取消',
+    `status`           TINYINT        NOT NULL DEFAULT 0 COMMENT '0-待付款 1-待发货 2-待收货 3-已完成 4-已取消 5-已关闭 6-退款中 7-退款完成',
     `receiver_name`    VARCHAR(50)    NOT NULL,
     `receiver_phone`   VARCHAR(20)    NOT NULL,
     `receiver_address` VARCHAR(500)   NOT NULL,
     `remark`           VARCHAR(255)   DEFAULT NULL COMMENT '订单备注',
     `payment_time`     DATETIME       DEFAULT NULL,
+    `expire_at`        DATETIME       DEFAULT NULL COMMENT '支付截止时间',
+    `ship_time`        DATETIME       DEFAULT NULL COMMENT '发货时间',
+    `finish_time`      DATETIME       DEFAULT NULL COMMENT '完成时间',
+    `cancel_reason`    VARCHAR(100)   DEFAULT NULL COMMENT '取消/关闭原因',
+    `version`          INT            NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
     `create_time`      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_order_no` (`order_no`),
-    KEY `idx_user` (`user_id`)
+    KEY `idx_user` (`user_id`),
+    KEY `idx_status_expire` (`status`, `expire_at`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='订单表';
 
 -- 订单明细表
@@ -157,6 +168,7 @@ CREATE TABLE IF NOT EXISTS `order_item` (
     `unit_price`    DECIMAL(10, 2) NOT NULL COMMENT '下单时单价快照',
     `quantity`      INT            NOT NULL,
     `total_price`   DECIMAL(10, 2) NOT NULL COMMENT '小计',
+    `refund_status` TINYINT        NOT NULL DEFAULT 0 COMMENT '0-无 1-退款中 2-已退款',
     `create_time`   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_order` (`order_id`)
@@ -230,3 +242,86 @@ CREATE TABLE IF NOT EXISTS `message` (
     KEY `idx_msg_conv` (`conversation_id`, `id`),
     KEY `idx_msg_unread` (`receiver_id`, `is_read`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='私信消息';
+
+-- 优惠券模板
+CREATE TABLE IF NOT EXISTS `coupon` (
+    `id`            BIGINT        NOT NULL AUTO_INCREMENT,
+    `name`          VARCHAR(100)  NOT NULL COMMENT '券名称',
+    `type`          TINYINT       NOT NULL DEFAULT 1 COMMENT '1-满减券',
+    `threshold`     DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '使用门槛（订单商品金额）',
+    `amount`        DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '抵扣金额',
+    `scope`         TINYINT       NOT NULL DEFAULT 1 COMMENT '1-全场 2-指定分类',
+    `category_id`   BIGINT        DEFAULT NULL COMMENT 'scope=2 时的分类',
+    `total`         INT           NOT NULL DEFAULT 0 COMMENT '发放总量，0 表示不限',
+    `received`      INT           NOT NULL DEFAULT 0 COMMENT '已领取数量',
+    `per_limit`     INT           NOT NULL DEFAULT 1 COMMENT '每人限领',
+    `start_time`    DATETIME      DEFAULT NULL COMMENT '生效时间',
+    `end_time`      DATETIME      DEFAULT NULL COMMENT '失效时间',
+    `status`        TINYINT       NOT NULL DEFAULT 1 COMMENT '0-停用 1-启用',
+    `create_time`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='优惠券模板';
+
+-- 用户持有的优惠券
+CREATE TABLE IF NOT EXISTS `user_coupon` (
+    `id`          BIGINT   NOT NULL AUTO_INCREMENT,
+    `user_id`     BIGINT   NOT NULL,
+    `coupon_id`   BIGINT   NOT NULL,
+    `status`      TINYINT  NOT NULL DEFAULT 0 COMMENT '0-未使用 1-已使用 2-已过期',
+    `order_no`    VARCHAR(32) DEFAULT NULL COMMENT '使用的订单号',
+    `used_time`   DATETIME DEFAULT NULL,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_uc_user` (`user_id`, `status`),
+    KEY `idx_uc_coupon` (`coupon_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='用户持有的优惠券';
+
+-- 支付单
+CREATE TABLE IF NOT EXISTS `payment` (
+    `id`           BIGINT        NOT NULL AUTO_INCREMENT,
+    `payment_no`   VARCHAR(32)   NOT NULL COMMENT '支付单号',
+    `order_no`     VARCHAR(32)   NOT NULL COMMENT '订单号',
+    `user_id`      BIGINT        NOT NULL,
+    `channel`      TINYINT       NOT NULL DEFAULT 1 COMMENT '1-支付宝 2-微信 3-银行卡',
+    `amount`       DECIMAL(10,2) NOT NULL COMMENT '支付金额',
+    `status`       TINYINT       NOT NULL DEFAULT 0 COMMENT '0-待支付 1-已支付 2-支付失败 3-已关闭',
+    `paid_time`    DATETIME      DEFAULT NULL,
+    `callback_no`  VARCHAR(64)   DEFAULT NULL COMMENT '支付网关回调流水号，用于幂等',
+    `create_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_payment_no` (`payment_no`),
+    UNIQUE KEY `uk_callback_no` (`callback_no`),
+    KEY `idx_pay_order` (`order_no`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='支付单';
+
+-- 退款售后单
+CREATE TABLE IF NOT EXISTS `refund_request` (
+    `id`            BIGINT        NOT NULL AUTO_INCREMENT,
+    `refund_no`     VARCHAR(32)   NOT NULL COMMENT '售后单号',
+    `order_no`      VARCHAR(32)   NOT NULL,
+    `user_id`       BIGINT        NOT NULL,
+    `type`          TINYINT       NOT NULL DEFAULT 1 COMMENT '1-仅退款 2-退货退款',
+    `amount`        DECIMAL(10,2) NOT NULL COMMENT '申请退款金额',
+    `reason`        VARCHAR(200)  NOT NULL COMMENT '退款原因',
+    `images`        VARCHAR(1000) DEFAULT NULL COMMENT '凭证图，逗号分隔',
+    `status`        TINYINT       NOT NULL DEFAULT 0 COMMENT '0-待审核 1-已同意 2-已拒绝 3-已退款',
+    `audit_remark`  VARCHAR(200)  DEFAULT NULL,
+    `audit_time`    DATETIME      DEFAULT NULL,
+    `create_time`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_refund_no` (`refund_no`),
+    KEY `idx_refund_order` (`order_no`),
+    KEY `idx_refund_user` (`user_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='退款售后单';
+
+-- 下单幂等令牌
+CREATE TABLE IF NOT EXISTS `order_submit_token` (
+    `token`       VARCHAR(64) NOT NULL,
+    `user_id`     BIGINT      NOT NULL,
+    `status`      TINYINT     NOT NULL DEFAULT 0 COMMENT '0-未使用 1-已使用',
+    `order_no`    VARCHAR(32) DEFAULT NULL COMMENT '使用后关联的订单号',
+    `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`token`),
+    KEY `idx_token_user` (`user_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='下单幂等令牌';

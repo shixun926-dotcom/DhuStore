@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wenhe.dhustore.mapper.CouponMapper">
+
+    <sql id="cols">id, name, type, threshold, amount, scope, category_id, total, received, per_limit,
+        start_time, end_time, status, create_time</sql>
+
+    <select id="findById" resultType="Coupon">
+        SELECT <include refid="cols"/> FROM `coupon` WHERE id = #{id}
+    </select>
+
+    <!-- 可领取：启用中、在有效期内、未领完、且该用户未达限领数量 -->
+    <select id="findReceivable" resultType="Coupon">
+        SELECT c.id, c.name, c.type, c.threshold, c.amount, c.scope, c.category_id,
+               c.total, c.received, c.per_limit, c.start_time, c.end_time, c.status, c.create_time
+        FROM `coupon` c
+        WHERE c.status = 1
+          AND (c.start_time IS NULL OR c.start_time &lt;= NOW())
+          AND (c.end_time IS NULL OR c.end_time &gt;= NOW())
+          AND (c.total = 0 OR c.received &lt; c.total)
+          AND (SELECT COUNT(*) FROM `user_coupon` uc
+               WHERE uc.user_id = #{userId} AND uc.coupon_id = c.id) &lt; c.per_limit
+        ORDER BY c.threshold ASC, c.id ASC
+    </select>
+
+    <update id="increaseReceived">
+        UPDATE `coupon` SET received = received + 1
+        WHERE id = #{id} AND (total = 0 OR received &lt; total)
+    </update>
+
+</mapper>

@@ -2,30 +2,50 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.wenhe.dhustore.mapper.OrderMapper">
 
-    <sql id="cols">id, order_no, user_id, total_price, payment, status, receiver_name, receiver_phone, receiver_address, remark, payment_time, create_time, update_time</sql>
+    <sql id="cols">id, order_no, user_id, total_price, goods_amount, freight, discount, pay_amount,
+        coupon_id, payment, status, receiver_name, receiver_phone, receiver_address, remark,
+        payment_time, expire_at, ship_time, finish_time, cancel_reason, version, create_time, update_time</sql>
 
     <insert id="insert" parameterType="Order" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO orders (order_no, user_id, total_price, payment, status, receiver_name, receiver_phone, receiver_address, remark)
-        VALUES (#{orderNo}, #{userId}, #{totalPrice}, #{payment}, #{status}, #{receiverName}, #{receiverPhone}, #{receiverAddress}, #{remark})
+        INSERT INTO orders (order_no, user_id, total_price, goods_amount, freight, discount, pay_amount,
+                            coupon_id, payment, status, receiver_name, receiver_phone, receiver_address,
+                            remark, expire_at)
+        VALUES (#{orderNo}, #{userId}, #{totalPrice}, #{goodsAmount}, #{freight}, #{discount}, #{payAmount},
+                #{couponId}, #{payment}, #{status}, #{receiverName}, #{receiverPhone}, #{receiverAddress},
+                #{remark}, #{expireAt})
     </insert>
 
     <select id="findByOrderNo" resultType="Order">
-        SELECT <include refid="cols"/>
-        FROM orders
-        WHERE order_no = #{orderNo}
+        SELECT <include refid="cols"/> FROM orders WHERE order_no = #{orderNo}
     </select>
 
     <select id="findById" resultType="Order">
-        SELECT <include refid="cols"/>
-        FROM orders
-        WHERE id = #{id}
+        SELECT <include refid="cols"/> FROM orders WHERE id = #{id}
     </select>
 
     <select id="findByUserId" resultType="Order">
-        SELECT <include refid="cols"/>
-        FROM orders
+        SELECT <include refid="cols"/> FROM orders
+        WHERE user_id = #{userId} ORDER BY id DESC
+    </select>
+
+    <select id="pageByUser" resultType="Order">
+        SELECT <include refid="cols"/> FROM orders
         WHERE user_id = #{userId}
+        <if test="statuses != null and statuses.size() > 0">
+            AND status IN
+            <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
+        </if>
         ORDER BY id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countByUser" resultType="long">
+        SELECT COUNT(*) FROM orders
+        WHERE user_id = #{userId}
+        <if test="statuses != null and statuses.size() > 0">
+            AND status IN
+            <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
+        </if>
     </select>
 
     <select id="findAll" resultType="Order">
@@ -47,13 +67,34 @@
     </select>
 
     <select id="countByUserIdAndStatus" resultType="long">
-        SELECT COUNT(*)
-        FROM orders
-        WHERE user_id = #{userId} AND status = #{status}
+        SELECT COUNT(*) FROM orders WHERE user_id = #{userId} AND status = #{status}
     </select>
 
-    <update id="updateStatus">
-        UPDATE orders SET status = #{status} WHERE id = #{id}
+    <!-- 状态迁移：WHERE 带旧状态，天然防并发重复流转 -->
+    <update id="transit">
+        UPDATE orders
+        SET status = #{to},
+            version = version + 1,
+            update_time = NOW()
+            <if test="payTime != null">, payment_time = #{payTime}</if>
+            <if test="shipTime != null">, ship_time = #{shipTime}</if>
+            <if test="finishTime != null">, finish_time = #{finishTime}</if>
+            <if test="cancelReason != null">, cancel_reason = #{cancelReason}</if>
+        WHERE order_no = #{orderNo} AND status = #{from}
     </update>
+
+    <select id="findExpired" resultType="Order">
+        SELECT <include refid="cols"/> FROM orders
+        WHERE status = 0 AND expire_at IS NOT NULL AND expire_at &lt;= #{now}
+        ORDER BY id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findShippedBefore" resultType="Order">
+        SELECT <include refid="cols"/> FROM orders
+        WHERE status = 2 AND ship_time IS NOT NULL AND ship_time &lt;= #{deadline}
+        ORDER BY id ASC
+        LIMIT #{limit}
+    </select>
 
 </mapper>

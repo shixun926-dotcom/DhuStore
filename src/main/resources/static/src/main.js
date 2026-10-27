@@ -22,6 +22,8 @@ var ROOT_TEMPLATE = `
     <cart-view      v-else-if="route.name==='cart'"     class="view"></cart-view>
     <checkout-view  v-else-if="route.name==='checkout'" class="view"></checkout-view>
     <orders-view    v-else-if="route.name==='orders'"   class="view"></orders-view>
+    <order-view      v-else-if="route.name==='order'"   class="view" :no="route.params.no"></order-view>
+    <cashier-view    v-else-if="route.name==='pay'"     class="view" :no="route.params.no"></cashier-view>
     <user-view      v-else-if="route.name==='user'"     class="view"></user-view>
     <admin-view     v-else-if="route.name==='admin'"    class="view"></admin-view>
     <div v-else class="empty">
