@@ -737,6 +737,7 @@ mysql -uroot -p < src/main/resources/db/migration_6_flash_sale.sql
 mysql -uroot -p < src/main/resources/db/migration_7_category_cover.sql
 mysql -uroot -p < src/main/resources/db/migration_8_social.sql
 mysql -uroot -p < src/main/resources/db/migration_9_trade.sql
+mysql -uroot -p < src/main/resources/db/migration_10_cart.sql
 ```
 
 ### 2. 配置凭据
@@ -750,6 +751,48 @@ mvn spring-boot:run
 ```
 
 访问：<http://localhost:8080>
+
+#### 端口被占用时
+
+启动报 `Web server failed to start. Port XXXX was already in use`，按以下顺序排查。
+
+**第一步，确认最终端口。** 日志里 `Tomcat initialized with port XXXX` 显示的是实际生效的端口，可能不是 8080。原因是环境变量优先级高于 `application.properties`：
+
+| 来源 | 优先级 | 说明 |
+|---|---|---|
+| 命令行 `--server.port=` | 最高 | 推荐的临时覆盖方式 |
+| 环境变量 `SERVER_PORT` | 高于配置文件 | 常规 Spring 约定 |
+| 环境变量 `SERVER__PORT` | 高于配置文件 | 双下划线，部分宿主环境（含 IDE 插件、沙箱运行时）会注入，同样会绑定到 `server.port` |
+| `application.properties` | 最低 | 项目默认 8080 |
+
+若日志端口与环境变量一致，说明配置被覆盖，改用命令行参数最稳妥。
+
+**第二步，定位占用进程。**
+
+```bash
+netstat -ano | findstr :8080
+```
+
+记下最后一列的 PID，在任务管理器的「详细信息」里按 PID 查找。常见占用方是微信、QQ、网易云音乐等客户端。
+
+注意两点：
+
+- 这类程序可能以 `Bound` 状态占用端口而非 `LISTENING`，此时 `curl` / `telnet` 探测看起来"没被占用"，但 Tomcat 绑定仍会失败；
+- 它们往往一次性占用一整段（实测微信会同时占住 8080–8090），逐个试意义不大，直接跳到 9090 以上更省事。
+
+**第三步，三选一处理。**
+
+```bash
+# 1) 换端口（保持全网卡可访问，手机同局域网可测）
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=9090
+
+# 2) 保留 8080，仅绑定回环地址（避开被占用的具体网卡地址）
+mvn spring-boot:run "-Dspring-boot.run.arguments=--server.port=8080 --server.address=127.0.0.1"
+
+# 3) 关闭占用端口的程序后重试
+```
+
+方案 2 只监听 `127.0.0.1`，局域网内其他设备（含手机）将无法访问；需要用手机调试时选方案 1。
 
 ### 4. 示例账号
 
@@ -830,6 +873,13 @@ mvn spring-boot:run
 ---
 
 ## 十四、更新记录
+
+### V2.5.1 ｜ 2026-10-28
+
+**文档修正**
+
+- 「本地启动」补充端口冲突排查：说明 `SERVER_PORT` / `SERVER__PORT` 会覆盖配置文件端口、`Bound` 状态占用对探测的干扰，以及换端口 / 只绑回环 / 释放端口三种处理方式
+- 增量迁移列表补上 `migration_10_cart.sql`（V2.4 引入但此前漏记）
 
 ### V2.5 ｜ 2026-10-28
 
@@ -1154,4 +1204,4 @@ mvn spring-boot:run
 
 ---
 
-*文档版本：V2.5 ｜ 最后更新：2026-10-28*
+*文档版本：V2.5.1 ｜ 最后更新：2026-10-28*
