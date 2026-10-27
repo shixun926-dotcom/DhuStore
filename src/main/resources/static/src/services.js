@@ -15,6 +15,33 @@ var api = DH.api.request;
 var U = DH.util;
 
 /* store 由 core.initStore 在 Vue 就绪后创建，不能在模块作用域缓存引用 */
+
+/**
+ * 统一忙碌态包装。
+ *
+ * 之前每个写操作都手写一遍「置忙 → 复位」，10 处重复且异常路径容易漏掉复位。
+ * 这里用计数而非布尔：并发操作时先结束的那个不会把后一个的忙碌态误清掉。
+ *
+ * @param {Function} task 返回 Promise 的函数
+ * @returns {Promise} 成功返回 task 的结果，失败统一 resolve(false)
+ */
+var busyDepth = 0;
+
+function withBusy(task) {
+  busyDepth++;
+  S().busy = true;
+  function release() {
+    busyDepth = Math.max(0, busyDepth - 1);
+    S().busy = busyDepth > 0;
+  }
+  try {
+    return Promise.resolve(task()).then(function (r) { release(); return r; },
+                                       function () { release(); return false; });
+  } catch (e) {
+    release();
+    return Promise.resolve(false);
+  }
+}
 function S() { return DH.store; }
 
 /* ------------------------------------------------- 一、商品与分类 */
@@ -245,15 +272,15 @@ function addCart(productId, qty, silent) {
 
 function removeCart(line) {
   if (!line) return Promise.resolve(false);
-  S().busy = true;
-  return api('DELETE', '/cart/' + line.id).then(function () {
-    DH.toast('已移出购物车', '🗑️');
-    return loadCart().then(function () { return true; }, function () { return false; });
-  }, function (e) {
-    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
-    return false;
-  }).then(function (r) { S().busy = false; return r; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('DELETE', '/cart/' + line.id).then(function () {
+      DH.toast('已移出购物车', '🗑️');
+      return loadCart().then(function () { return true; }, function () { return false; });
+    }, function (e) {
+      if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+      return false;
+    });
+  });
 }
 
 /** 后端 PUT /cart/{id} 可能整行覆盖，因此把当前 checked 一起回传 */
@@ -266,14 +293,14 @@ function setCartQty(line, v) {
     DH.toast('库存仅剩 ' + line.stock + ' 件', '⚠️');
   }
   if (n === line.quantity) { line.quantity = n; return Promise.resolve(true); }
-  S().busy = true;
-  return api('PUT', '/cart/' + line.id, { quantity: n, checked: line.checked }).then(function () {
-    return loadCart().then(function () { return true; }, function () { return false; });
-  }, function (e) {
-    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
-    return false;
-  }).then(function (r) { S().busy = false; return r; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('PUT', '/cart/' + line.id, { quantity: n, checked: line.checked }).then(function () {
+      return loadCart().then(function () { return true; }, function () { return false; });
+    }, function (e) {
+      if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+      return false;
+    });
+  });
 }
 
 function toggleCartLine(line, checked) {
@@ -286,45 +313,44 @@ function toggleCartLine(line, checked) {
 /** 全选 / 全不选。服务端只作用于在售且有库存的行，返回受影响条数 */
 function setAllChecked(checked) {
   if (!S().cart.length) return Promise.resolve(false);
-  S().busy = true;
-  return api('PUT', '/cart/checked-all', { checked: checked ? 1 : 0 }).then(function () {
-    return loadCart().catch(function () {});
-  }).then(function () { S().busy = false; return true; },
-          function (e) {
-            S().busy = false;
-            if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
-            return false;
-          });
+  return withBusy(function () {
+    return api('PUT', '/cart/checked-all', { checked: checked ? 1 : 0 }).then(function () {
+      return loadCart().catch(function () {});
+    }, function (e) {
+      if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+      return false;
+    });
+  });
 }
 
 /** 删除选中：走批量接口，一次往返 */
 function clearChecked() {
   var lines = S().cart.filter(function (i) { return i.checked === 1; });
   if (!lines.length) return Promise.resolve(false);
-  S().busy = true;
   var ids = lines.map(function (i) { return i.id; }).join(',');
-  return api('DELETE', '/cart/batch?ids=' + ids).then(function (n) {
-    DH.toast('已删除 ' + (Number(n) || lines.length) + ' 项', '🗑️');
-    return loadCart().catch(function () {});
-  }, function (e) {
-    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
-    return false;
-  }).then(function (r) { S().busy = false; return r; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('DELETE', '/cart/batch?ids=' + ids).then(function (n) {
+      DH.toast('已删除 ' + (Number(n) || lines.length) + ' 项', '🗑️');
+      return loadCart().catch(function () {});
+    }, function (e) {
+      if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+      return false;
+    });
+  });
 }
 
 /** 一键清理失效商品（已下架 / 已删除 / 无库存） */
 function clearUnavailableCart() {
-  S().busy = true;
-  return api('DELETE', '/cart/unavailable').then(function (n) {
-    var c = Number(n) || 0;
-    DH.toast(c > 0 ? ('已清理 ' + c + ' 件失效商品') : '没有需要清理的商品', '🧹');
-    return loadCart().catch(function () {});
-  }, function (e) {
-    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
-    return false;
-  }).then(function (r) { S().busy = false; return r; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('DELETE', '/cart/unavailable').then(function (n) {
+      var c = Number(n) || 0;
+      DH.toast(c > 0 ? ('已清理 ' + c + ' 件失效商品') : '没有需要清理的商品', '🧹');
+      return loadCart().catch(function () {});
+    }, function (e) {
+      if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+      return false;
+    });
+  });
 }
 
 /* ------------------------------------------------------------- 四、订单 */
@@ -435,28 +461,29 @@ function confirmOrder(o) {
 function rebuyOrder(o) {
   var items = (o.items || []).filter(function (g) { return Number(g.quantity) > 0; });
   if (!items.length) { DH.toast('该订单没有可购买的商品', '⚠️'); return Promise.resolve(false); }
-  S().busy = true;
-  return Promise.all(items.map(function (g) {
-    return api('POST', '/cart', { productId: g.productId, quantity: Number(g.quantity) || 1 })
-      .catch(function () {});
-  })).then(function () {
-    DH.toast('已加入购物车', '🛒');
-    return loadCart().catch(function () {});
-  }).then(function () { S().busy = false; return true; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return Promise.all(items.map(function (g) {
+      return api('POST', '/cart', { productId: g.productId, quantity: Number(g.quantity) || 1 })
+        .catch(function () {});
+    })).then(function () {
+      DH.toast('已加入购物车', '🛒');
+      /* 视图据此决定是否跳转购物车，返回值需保持布尔语义 */
+      return loadCart().then(function () { return true; }, function () { return false; });
+    });
+  });
 }
 
 /** 订单类动作的公共外壳：置忙、成功提示并刷新、失败提示、必定复位 */
 function act(path, okMsg, icon, unsupportedMsg) {
-  S().busy = true;
-  return api('POST', path).then(function () {
-    DH.toast(okMsg, icon);
-    return Promise.all([loadOrders(), loadPending()]).catch(function () {});
-  }, function (e) {
-    if (e === U.HANDLED) return;
-    DH.toast(U.isUnsupported(e) && unsupportedMsg ? unsupportedMsg : U.errMsg(e), '⚠️');
-  }).then(function () { S().busy = false; return true; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('POST', path).then(function () {
+      DH.toast(okMsg, icon);
+      return Promise.all([loadOrders(), loadPending()]).catch(function () {});
+    }, function (e) {
+      if (e === U.HANDLED) return;
+      DH.toast(U.isUnsupported(e) && unsupportedMsg ? unsupportedMsg : U.errMsg(e), '⚠️');
+    });
+  });
 }
 
 /* ------------------------------------------------------------- 五、地址 */
@@ -474,25 +501,25 @@ function saveAddress(body, id) {
 }
 
 function setDefaultAddress(a) {
-  S().busy = true;
-  return api('PUT', '/addresses/' + a.id + '/default').then(function () {
-    DH.toast('已设为默认地址', '📍');
-    return loadAddresses();
-  }, function (e) {
-    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
-  }).then(function () { S().busy = false; return true; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('PUT', '/addresses/' + a.id + '/default').then(function () {
+      DH.toast('已设为默认地址', '📍');
+      return loadAddresses();
+    }, function (e) {
+      if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+    });
+  });
 }
 
 function deleteAddress(a) {
-  S().busy = true;
-  return api('DELETE', '/addresses/' + a.id).then(function () {
-    DH.toast('地址已删除', '🗑️');
-    return loadAddresses();
-  }, function (e) {
-    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
-  }).then(function () { S().busy = false; return true; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('DELETE', '/addresses/' + a.id).then(function () {
+      DH.toast('地址已删除', '🗑️');
+      return loadAddresses();
+    }, function (e) {
+      if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+    });
+  });
 }
 
 /* ------------------------------------------------------------- 六、后台 */
@@ -510,14 +537,14 @@ function loadAdminOrders(status) {
 
 /** 1→2 发货（契约接口，管理员） */
 function shipOrder(o) {
-  S().busy = true;
-  return api('POST', '/orders/' + o.orderNo + '/ship').then(function () {
-    DH.toast('订单 ' + o.orderNo + ' 已发货', '🚚');
-  }, function (e) {
-    if (e === U.HANDLED) return;
-    DH.toast(U.isUnsupported(e) ? '后端暂未提供发货接口' : U.errMsg(e), '⚠️');
-  }).then(function () { S().busy = false; return true; },
-          function () { S().busy = false; return false; });
+  return withBusy(function () {
+    return api('POST', '/orders/' + o.orderNo + '/ship').then(function () {
+      DH.toast('订单 ' + o.orderNo + ' 已发货', '🚚');
+    }, function (e) {
+      if (e === U.HANDLED) return;
+      DH.toast(U.isUnsupported(e) ? '后端暂未提供发货接口' : U.errMsg(e), '⚠️');
+    });
+  });
 }
 
 /** 商品增改（契约接口，管理员）。g.id 为 0 表示新增 */

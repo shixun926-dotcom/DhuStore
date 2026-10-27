@@ -14,8 +14,6 @@ public interface OrderMapper {
 
     Order findById(Long id);
 
-    List<Order> findByUserId(Long userId);
-
     /** 用户侧分页，statuses 为 null 或空表示全部（支持「售后」「已取消」这类多状态分组） */
     List<Order> pageByUser(@Param("userId") Long userId, @Param("statuses") List<Integer> statuses,
                            @Param("offset") int offset, @Param("size") int size);

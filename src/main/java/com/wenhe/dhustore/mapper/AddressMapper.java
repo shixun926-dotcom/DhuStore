@@ -11,6 +11,8 @@ public interface AddressMapper {
 
     List<Address> findByUserId(Long userId);
 
+    int countByUserId(Long userId);
+
     int insert(Address address);
 
     int update(Address address);

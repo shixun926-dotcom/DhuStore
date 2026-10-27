@@ -1,6 +1,7 @@
 package com.wenhe.dhustore.service;
 
 import com.wenhe.dhustore.common.BusinessException;
+import com.wenhe.dhustore.common.Paging;
 import com.wenhe.dhustore.common.ResultCode;
 import com.wenhe.dhustore.dto.ConversationVO;
 import com.wenhe.dhustore.dto.MessageVO;
@@ -89,7 +90,7 @@ public class ChatService {
     /** 历史消息：取 beforeId 之前的 size 条，返回时按时间升序 */
     public List<MessageVO> messages(Long meId, Long conversationId, Long beforeId, int size) {
         requireConversation(conversationId, meId);
-        int limit = Math.min(Math.max(size, 1), 100);
+        int limit = Paging.size(size, 30, Paging.MAX_MESSAGE_SIZE);
         List<Message> rows = messageMapper.findBefore(conversationId, beforeId, limit);
         Collections.reverse(rows);
         return toVOs(rows, meId);

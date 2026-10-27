@@ -2,6 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.wenhe.dhustore.mapper.OrderItemMapper">
 
+    <sql id="cols">
+        id, order_id, product_id, product_name, product_image, unit_price, quantity, total_price, refund_status, create_time
+    </sql>
+
     <insert id="batchInsert">
         INSERT INTO order_item (order_id, product_id, product_name, product_image, unit_price, quantity, total_price)
         VALUES
@@ -11,9 +15,21 @@
     </insert>
 
     <select id="findByOrderId" resultType="OrderItem">
-        SELECT id, order_id, product_id, product_name, product_image, unit_price, quantity, total_price, create_time
+        SELECT <include refid="cols"/>
         FROM order_item
         WHERE order_id = #{orderId}
+        ORDER BY id
+    </select>
+
+    <!-- 订单列表装配用：一次取回本页所有订单的明细，避免逐单查询 -->
+    <select id="findByOrderIds" resultType="OrderItem">
+        SELECT <include refid="cols"/>
+        FROM order_item
+        WHERE order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        ORDER BY order_id, id
     </select>
 
 </mapper>

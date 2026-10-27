@@ -2,6 +2,7 @@ package com.wenhe.dhustore.service;
 
 import com.wenhe.dhustore.common.BusinessException;
 import com.wenhe.dhustore.common.PageResult;
+import com.wenhe.dhustore.common.Paging;
 import com.wenhe.dhustore.common.ResultCode;
 import com.wenhe.dhustore.dto.FollowUserVO;
 import com.wenhe.dhustore.dto.PublicUserVO;
@@ -67,15 +68,19 @@ public class SocialService {
     }
 
     public PageResult<FollowUserVO> following(Long userId, int page, int size) {
-        int offset = (page - 1) * size;
-        List<FollowUserVO> list = followMapper.findFollowing(userId, offset, size);
-        return new PageResult<>(list, followMapper.countFollowing(userId), page, size);
+        int safePage = Paging.page(page);
+        int safeSize = Paging.size(size, Paging.DEFAULT_SIZE, 100);
+        List<FollowUserVO> list = followMapper.findFollowing(userId,
+                Paging.offset(safePage, safeSize), safeSize);
+        return new PageResult<>(list, followMapper.countFollowing(userId), safePage, safeSize);
     }
 
     public PageResult<FollowUserVO> followers(Long userId, int page, int size) {
-        int offset = (page - 1) * size;
-        List<FollowUserVO> list = followMapper.findFollowers(userId, offset, size);
-        return new PageResult<>(list, followMapper.countFollowers(userId), page, size);
+        int safePage = Paging.page(page);
+        int safeSize = Paging.size(size, Paging.DEFAULT_SIZE, 100);
+        List<FollowUserVO> list = followMapper.findFollowers(userId,
+                Paging.offset(safePage, safeSize), safeSize);
+        return new PageResult<>(list, followMapper.countFollowers(userId), safePage, safeSize);
     }
 
     /** 关注数 / 粉丝数，供个人中心身份卡展示 */

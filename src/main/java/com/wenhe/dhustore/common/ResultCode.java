@@ -37,6 +37,8 @@ public enum ResultCode {
     CART_ITEM_NOT_FOUND(2016, "购物车项不存在"),
     PRODUCT_UNAVAILABLE(2017, "商品已下架或库存不足"),
     CART_ITEM_LIMIT(2018, "购物车商品种类已达上限"),
+    ADDRESS_NOT_FOUND(2019, "收货地址不存在"),
+    ADDRESS_LIMIT(2020, "收货地址数量已达上限"),
 
     FOLLOW_SELF(3001, "不能关注自己"),
     CONVERSATION_NOT_FOUND(3002, "会话不存在或无权访问"),

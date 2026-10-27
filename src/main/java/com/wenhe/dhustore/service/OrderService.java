@@ -3,6 +3,7 @@ package com.wenhe.dhustore.service;
 import com.wenhe.dhustore.common.BusinessException;
 import com.wenhe.dhustore.common.OrderStatus;
 import com.wenhe.dhustore.common.PageResult;
+import com.wenhe.dhustore.common.Paging;
 import com.wenhe.dhustore.common.ResultCode;
 import com.wenhe.dhustore.dto.CouponVO;
 import com.wenhe.dhustore.dto.OrderCreateRequest;
@@ -307,19 +308,13 @@ public class OrderService {
 
     /* ------------------------------------------------------------ 查询 */
 
-    public List<OrderVO> list(Long userId) {
-        return orderMapper.findByUserId(userId).stream()
-                .map(this::fillItems)
-                .collect(Collectors.toList());
-    }
-
     public PageResult<OrderVO> page(Long userId, List<Integer> statuses, int page, int size) {
-        int safeSize = Math.min(Math.max(size, 1), 50);
-        int offset = (page - 1) * safeSize;
-        List<Order> rows = orderMapper.pageByUser(userId, statuses, offset, safeSize);
+        int safePage = Paging.page(page);
+        int safeSize = Paging.size(size);
+        List<Order> rows = orderMapper.pageByUser(userId, statuses,
+                Paging.offset(safePage, safeSize), safeSize);
         long total = orderMapper.countByUser(userId, statuses);
-        return new PageResult<>(rows.stream().map(this::fillItems).collect(Collectors.toList()),
-                total, page, safeSize);
+        return new PageResult<>(assemble(rows), total, safePage, safeSize);
     }
 
     public OrderVO detail(Long userId, String orderNo) {
@@ -449,11 +444,11 @@ public class OrderService {
     /* ------------------------------------------------------------ 统计（后台） */
 
     public PageResult<OrderVO> pageAllForAdmin(Integer status, int page, int size) {
-        int offset = (page - 1) * size;
-        List<Order> list = orderMapper.findAll(status, offset, size);
+        int safePage = Paging.page(page);
+        int safeSize = Paging.size(size);
+        List<Order> rows = orderMapper.findAll(status, Paging.offset(safePage, safeSize), safeSize);
         long total = orderMapper.countAll(status);
-        List<OrderVO> vos = list.stream().map(this::fillItems).collect(Collectors.toList());
-        return new PageResult<>(vos, total, page, size);
+        return new PageResult<>(assemble(rows), total, safePage, safeSize);
     }
 
     public long countPendingShipments() {
@@ -548,6 +543,26 @@ public class OrderService {
         OrderVO vo = toVO(order);
         vo.setItems(orderItemMapper.findByOrderId(order.getId()));
         return vo;
+    }
+
+    /**
+     * 批量装配订单明细：一次查询取回本页所有订单的商品行，再按订单分组。
+     * 逐单查询会形成 N+1（每页 10 单 = 11 次 SQL），此处在列表场景统一走批量。
+     */
+    private List<OrderVO> assemble(List<Order> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> ids = orders.stream().map(Order::getId).collect(Collectors.toList());
+        Map<Long, List<OrderItem>> grouped = orderItemMapper.findByOrderIds(ids).stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderId));
+        List<OrderVO> vos = new ArrayList<>(orders.size());
+        for (Order o : orders) {
+            OrderVO vo = toVO(o);
+            vo.setItems(grouped.getOrDefault(o.getId(), List.of()));
+            vos.add(vo);
+        }
+        return vos;
     }
 
     public OrderVO toVO(Order order) {

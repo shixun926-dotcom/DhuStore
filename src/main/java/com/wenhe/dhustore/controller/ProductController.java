@@ -3,11 +3,13 @@ package com.wenhe.dhustore.controller;
 import com.wenhe.dhustore.common.PageResult;
 import com.wenhe.dhustore.common.Result;
 import com.wenhe.dhustore.annotation.RequireAdmin;
+import com.wenhe.dhustore.dto.ProductRequest;
 import com.wenhe.dhustore.dto.SellerVO;
 import com.wenhe.dhustore.entity.Product;
 import com.wenhe.dhustore.service.ProductService;
 import com.wenhe.dhustore.service.SocialService;
 import com.wenhe.dhustore.util.UserContext;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,15 +52,15 @@ public class ProductController {
 
     @PostMapping
     @RequireAdmin
-    public Result<Void> create(@RequestBody Product product) {
-        productService.create(product);
+    public Result<Void> create(@Valid @RequestBody ProductRequest req) {
+        productService.create(req);
         return Result.success();
     }
 
     @PutMapping("/{id}")
     @RequireAdmin
-    public Result<Void> update(@PathVariable Long id, @RequestBody Product product) {
-        productService.update(id, product);
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody ProductRequest req) {
+        productService.update(id, req);
         return Result.success();
     }
 

@@ -19,7 +19,7 @@
                 AND category_id = #{categoryId}
             </if>
             <if test="keyword != null and keyword != ''">
-                AND name LIKE CONCAT('%', #{keyword}, '%')
+                AND name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
             </if>
         </where>
         ORDER BY id DESC
@@ -35,7 +35,7 @@
                 AND category_id = #{categoryId}
             </if>
             <if test="keyword != null and keyword != ''">
-                AND name LIKE CONCAT('%', #{keyword}, '%')
+                AND name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
             </if>
         </where>
     </select>

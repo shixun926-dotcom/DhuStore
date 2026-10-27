@@ -23,11 +23,6 @@
         SELECT <include refid="cols"/> FROM orders WHERE id = #{id}
     </select>
 
-    <select id="findByUserId" resultType="Order">
-        SELECT <include refid="cols"/> FROM orders
-        WHERE user_id = #{userId} ORDER BY id DESC
-    </select>
-
     <select id="pageByUser" resultType="Order">
         SELECT <include refid="cols"/> FROM orders
         WHERE user_id = #{userId}

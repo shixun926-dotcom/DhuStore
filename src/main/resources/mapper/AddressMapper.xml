@@ -17,6 +17,10 @@
         ORDER BY is_default DESC, id DESC
     </select>
 
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(*) FROM address WHERE user_id = #{userId}
+    </select>
+
     <insert id="insert" parameterType="Address" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO address (user_id, receiver_name, receiver_phone, province, city, district, detail, is_default)
         VALUES (#{userId}, #{receiverName}, #{receiverPhone}, #{province}, #{city}, #{district}, #{detail}, #{isDefault})
