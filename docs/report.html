@@ -109,8 +109,7 @@
   <div class="meta">
     项目名称：DhuStore（东华购物）<br>
     技术架构：B/S · 前后端分离 · RESTful API<br>
-    开发时间：2026 年 10 月<br>
-    报告版本：V1.0
+    开发时间：2026 年 10 月
   </div>
 </div>
 
@@ -130,9 +129,10 @@
     商品图片支持阿里云 OSS 存储，未配置 OSS 时自动回退到本地磁盘，兼顾部署成本与可移植性。
   </p>
   <p>
-    后台管理模块提供数据看板、商品管理、订单管理与发布申请审核，帮助运营人员掌握销售趋势、
-    处理待发货订单并完成商品上架审核。系统在安全性方面做了较完整的设计，包括 BCrypt 密码加密、
-    JWT 鉴权、基于角色的接口权限控制、上传文件的类型与大小校验、UUID 重命名与路径穿越防护。
+    后台管理模块提供数据看板、商品管理、分类管理、订单管理与发布申请审核，并支持首页内容运营——
+    轮播图、促销位、分类图标与封面、限时秒杀均可自助配置，帮助运营人员掌握销售趋势、处理待发货订单
+    并完成商品上架审核。系统在安全性方面做了较完整的设计，包括 BCrypt 密码加密、JWT 鉴权、基于角色
+    的接口权限控制、上传文件的类型与大小校验、UUID 重命名与路径穿越防护。
   </p>
   <div class="keywords">
     <b>关键词：</b>在线购物系统；Spring Boot；MyBatis；Vue 3；JWT；商品审核；阿里云 OSS
@@ -188,10 +188,10 @@
 </table>
 
 <div class="kpi-row">
-  <div class="kpi-box"><div class="n">39</div><div class="l">REST 接口</div></div>
-  <div class="kpi-box"><div class="n">10</div><div class="l">数据表</div></div>
-  <div class="kpi-box"><div class="n">7</div><div class="l">业务模块</div></div>
-  <div class="kpi-box"><div class="n">2</div><div class="l">用户角色</div></div>
+  <div class="kpi-box"><div class="n">55</div><div class="l">REST 接口</div></div>
+  <div class="kpi-box"><div class="n">13</div><div class="l">数据表</div></div>
+  <div class="kpi-box"><div class="n">9</div><div class="l">业务模块</div></div>
+  <div class="kpi-box"><div class="n">3</div><div class="l">用户角色</div></div>
 </div>
 
 <!-- ======================= 2 需求分析 ======================= -->
@@ -201,15 +201,16 @@
 <table>
   <thead><tr><th style="width:16%">模块</th><th>功能点</th><th style="width:14%">使用角色</th></tr></thead>
   <tbody>
-    <tr><td>认证与用户</td><td>注册、登录、获取当前用户、修改个人资料</td><td>全体用户</td></tr>
+    <tr><td>认证与用户</td><td>注册、登录、获取当前用户、修改个人资料、头像上传（即时预览 + 保存生效）</td><td>全体用户</td></tr>
     <tr><td>商品浏览</td><td>分类列表、商品分页、关键词搜索、搜索联想、商品详情与多图浏览</td><td>游客 / 用户</td></tr>
+    <tr><td>首页</td><td>轮播、分类入口（16:9 场景图卡 + 折叠展开）、限时秒杀、商品推荐</td><td>全体用户</td></tr>
     <tr><td>购物车</td><td>加入购物车、修改数量、勾选与全选、删除、清空选中</td><td>普通用户</td></tr>
     <tr><td>收货地址</td><td>新增、编辑、删除、设置默认地址</td><td>普通用户</td></tr>
     <tr><td>订单</td><td>提交订单、支付、取消、确认收货、订单列表与详情、再次购买</td><td>普通用户</td></tr>
     <tr><td>商品发布</td><td>提交发布申请、上传多图、查看我的申请与审核结果</td><td>普通用户</td></tr>
     <tr><td>审核管理</td><td>查看申请列表、查看详情与图片、通过或拒绝（填写原因）</td><td>管理员</td></tr>
-    <tr><td>后台运营</td><td>数据看板、商品增删改查、订单管理与发货</td><td>管理员</td></tr>
-    <tr><td>消息提醒</td><td>待发货 / 待收货角标，按页面层级切换显示位置</td><td>用户 / 管理员</td></tr>
+    <tr><td>后台运营</td><td>数据看板、商品管理、分类管理、订单管理与发货、首页内容运营、限时秒杀配置</td><td>管理员</td></tr>
+    <tr><td>消息提醒</td><td>待发货 / 待收货角标，按角色与页面层级切换显示位置</td><td>用户 / 管理员</td></tr>
   </tbody>
 </table>
 
@@ -301,7 +302,7 @@
 
   <rect x="170" y="366" width="320" height="50" rx="9" fill="#e8f1fc" stroke="#b9d4f4"/>
   <text x="330" y="388" font-size="12" font-weight="700" text-anchor="middle" fill="#1e5fa8">MySQL 8 · dhustore</text>
-  <text x="330" y="405" font-size="9.5" text-anchor="middle" fill="#4a7bb5">10 张业务表 · InnoDB · utf8mb4</text>
+  <text x="330" y="405" font-size="9.5" text-anchor="middle" fill="#4a7bb5">13 张业务表 · InnoDB · utf8mb4</text>
 
   <rect x="520" y="366" width="280" height="50" rx="9" fill="#eaf7ea" stroke="#bfe3bf"/>
   <text x="660" y="388" font-size="12" font-weight="700" text-anchor="middle" fill="#0a7a0a">阿里云 OSS</text>
@@ -352,7 +353,7 @@
     <text x="810" y="124" font-weight="600" fill="#c92a37">商品发布与审核</text><text x="810" y="141" font-size="9" fill="#a0555c">申请 / 图片 / 审核</text>
 
     <rect x="330" y="200" width="260" height="54" rx="8" fill="#fff" stroke="#dfe2e8"/>
-    <text x="460" y="224" font-weight="600">后台运营</text><text x="460" y="241" font-size="9" fill="#6b7280">数据看板 / 商品 / 订单 / 审核</text>
+    <text x="460" y="224" font-weight="600">后台运营</text><text x="460" y="241" font-size="9" fill="#6b7280">看板 / 商品 / 分类 / 订单 / 首页运营</text>
 
     <rect x="640" y="200" width="260" height="54" rx="8" fill="#f7f8fa" stroke="#dfe2e8"/>
     <text x="770" y="224" font-weight="600">公共支撑</text><text x="770" y="241" font-size="9" fill="#6b7280">JWT / 统一响应 / 异常 / 文件上传</text>
@@ -385,13 +386,15 @@
 
 <h2>4.1 实体关系</h2>
 <p>
-  系统共设计 10 张数据表。用户与购物车、地址、订单、发布申请均为一对多关系；
+  系统共设计 13 张数据表。用户与购物车、地址、订单、发布申请均为一对多关系；
   商品与商品图片为一对多；申请与申请图片为一对多。审核通过时，申请图片会被复制为商品图片，
   从而在数据库中形成「申请数据」与「正式商品数据」的物理隔离。
+  此外，<code>banner</code>（轮播）、<code>site_setting</code>（站点配置）与
+  <code>flash_sale</code>（秒杀位）三张表支撑首页内容运营，均与商品表形成弱引用关系。
 </p>
 
 <div class="fig">
-<svg viewBox="0 0 920 520" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 920 640" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="crow" markerWidth="12" markerHeight="10" refX="10" refY="4" orient="auto">
       <path d="M0,0 L10,4 L0,8" fill="none" stroke="#8b9099"/>
@@ -409,14 +412,16 @@
   <text class="entt" x="34" y="52">user</text>
   <text class="entf" x="34" y="70">id · username · password</text>
   <text class="entf" x="34" y="86">nickname · phone · email</text>
-  <text class="entf" x="34" y="102">role · status</text>
+  <text class="entf" x="34" y="102">avatar · role · status</text>
   <text class="entf" x="34" y="120" fill="#c92a37">角色：0 用户 / 1 管理员</text>
 
   <!-- category -->
-  <rect class="ent" x="20" y="200" width="170" height="78" rx="8"/>
+  <rect class="ent" x="20" y="200" width="170" height="94" rx="8"/>
   <text class="entt" x="34" y="222">category</text>
   <text class="entf" x="34" y="240">id · name · parent_id</text>
-  <text class="entf" x="34" y="256">sort · status</text>
+  <text class="entf" x="34" y="256">icon · cover · sort</text>
+  <text class="entf" x="34" y="272">status</text>
+  <text class="entf" x="34" y="288" fill="#c92a37">icon / cover 首页展示素材</text>
 
   <!-- product -->
   <rect class="ent" x="360" y="30" width="200" height="128" rx="8"/>
@@ -475,6 +480,24 @@
   <text class="entf" x="714" y="446">product_name · unit_price</text>
   <text class="entf" x="714" y="462" fill="#c92a37">下单时快照，防商品变更</text>
 
+  <!-- banner -->
+  <rect class="ent" x="20" y="540" width="200" height="72" rx="8" fill="#f0f7ff" stroke="#b9d4f4"/>
+  <text class="entt" x="34" y="562">banner</text>
+  <text class="entf" x="34" y="580">id · image_url · sort · status</text>
+  <text class="entf" x="34" y="596" fill="#1e5fa8">首页轮播，最多 5 张</text>
+
+  <!-- site_setting -->
+  <rect class="ent" x="260" y="540" width="200" height="72" rx="8" fill="#f0f7ff" stroke="#b9d4f4"/>
+  <text class="entt" x="274" y="562">site_setting</text>
+  <text class="entf" x="274" y="580">key · value</text>
+  <text class="entf" x="274" y="596" fill="#1e5fa8">促销位图片等站点配置</text>
+
+  <!-- flash_sale -->
+  <rect class="ent" x="500" y="540" width="200" height="72" rx="8" fill="#f0f7ff" stroke="#b9d4f4"/>
+  <text class="entt" x="514" y="562">flash_sale</text>
+  <text class="entf" x="514" y="580">product_id(唯一) · sort</text>
+  <text class="entf" x="514" y="596" fill="#1e5fa8">秒杀位，只存商品引用</text>
+
   <!-- relations -->
   <path class="rel" marker-end="url(#crow)" d="M190,70 L360,70"/>
   <path class="rel" marker-end="url(#crow)" d="M190,240 L360,200"/>
@@ -500,8 +523,8 @@
 <table>
   <thead><tr><th style="width:22%">表名</th><th>说明</th><th style="width:26%">关键字段</th></tr></thead>
   <tbody>
-    <tr><td><code>user</code></td><td>用户账号与角色</td><td>username、password、role、status</td></tr>
-    <tr><td><code>category</code></td><td>商品分类（支持父子级）</td><td>name、parent_id、sort、status</td></tr>
+    <tr><td><code>user</code></td><td>用户账号与角色</td><td>username、password、avatar、role、status</td></tr>
+    <tr><td><code>category</code></td><td>商品分类（含图标与封面）</td><td>name、parent_id、icon、cover、sort、status</td></tr>
     <tr><td><code>product</code></td><td>正式商品</td><td>category_id、seller_id、price、stock、status</td></tr>
     <tr><td><code>product_image</code></td><td>商品图片（1~9 张）</td><td>product_id、image_url、sort</td></tr>
     <tr><td><code>product_apply</code></td><td>商品发布申请</td><td>user_id、status、reject_reason、auditor_id</td></tr>
@@ -510,6 +533,9 @@
     <tr><td><code>cart_item</code></td><td>购物车</td><td>user_id、product_id、quantity、checked</td></tr>
     <tr><td><code>orders</code></td><td>订单主表</td><td>order_no、total_price、status、receiver_*</td></tr>
     <tr><td><code>order_item</code></td><td>订单明细（快照）</td><td>order_id、product_name、unit_price、quantity</td></tr>
+    <tr><td><code>banner</code></td><td>首页轮播图</td><td>image_url、sort、status（≤5 张）</td></tr>
+    <tr><td><code>site_setting</code></td><td>站点配置键值对</td><td>key、value（促销位图片）</td></tr>
+    <tr><td><code>flash_sale</code></td><td>首页秒杀位</td><td>product_id（唯一）、sort（只存引用）</td></tr>
   </tbody>
 </table>
 
@@ -706,6 +732,24 @@
   <code>ThreadLocal</code> 在请求生命周期内传递，请求结束后统一清理，避免线程复用导致的数据串扰。
 </p>
 
+<h2>5.5 首页内容运营</h2>
+<p>
+  首页的轮播图、促销位、分类图标与封面、限时秒杀均可在后台自助配置，不再写死在前端代码里。
+  轮播图存于 <code>banner</code> 表（最多 5 张，超出返回业务码 2011）；两个促销位图片存于
+  <code>site_setting</code> 键值表；分类图标与 16:9 封面分别存于 <code>category.icon</code> 与
+  <code>category.cover</code>。所有素材统一通过 <code>POST /api/common/upload</code> 上传，
+  数据库只保存 URL。未配置素材时，各位置回落到内置占位：轮播显示空白占位、促销位回落到渐变卡片、
+  分类无封面时回落到按分类色相生成的柔和渐变。
+</p>
+
+<h2>5.6 限时秒杀</h2>
+<p>
+  秒杀位存于 <code>flash_sale</code> 表，<code>product_id</code> 唯一约束保证同一商品不重复上秒杀位，
+  最多 8 个，首页按 <code>sort</code> 顺序展示前 4 个。与常规「快照」做法不同，秒杀位只存商品引用，
+  商品的改价、库存变化、下架都会实时反映到首页，避免数据不一致。重复添加返回业务码 2014、超限返回
+  2015。前台秒杀数据优先读取后台配置，未配置时回落到「按库存自动取前 4 件」。
+</p>
+
 <!-- ======================= 6 界面展示 ======================= -->
 <h1 class="chapter"><span class="no">6</span>系统界面展示</h1>
 <p>以下截图均来自系统实际运行页面，数据通过后端接口实时读取。</p>
@@ -736,23 +780,48 @@
 </div>
 
 <div class="fig">
+  <img src="report-assets/user.png" alt="个人中心">
+  <div class="cap">图 6-6 个人中心：资料修改、头像上传与即时预览、收货地址管理</div>
+</div>
+
+<div class="fig">
   <img src="report-assets/publish.png" alt="申请发布商品">
-  <div class="cap">图 6-6 个人中心 · 申请发布商品：分类、价格库存、多图上传（1~9 张，首图为主图）</div>
+  <div class="cap">图 6-7 个人中心 · 申请发布商品：分类、价格库存、多图上传（1~9 张，首图为主图）</div>
 </div>
 
 <div class="fig">
   <img src="report-assets/admin-dash.png" alt="后台数据看板">
-  <div class="cap">图 6-7 后台数据看板：销售额 / 订单量 / 客单价 / 新增用户 KPI 与销售趋势</div>
+  <div class="cap">图 6-8 后台数据看板：销售额 / 订单量 / 客单价 / 新增用户 KPI 与销售趋势</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/admin-goods.png" alt="后台商品管理">
+  <div class="cap">图 6-9 后台 · 商品管理：搜索、分类筛选与商品增删改</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/admin-cats.png" alt="后台分类管理">
+  <div class="cap">图 6-10 后台 · 分类管理：图标 / 封面配置与删除保护</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/admin-flash.png" alt="后台限时秒杀">
+  <div class="cap">图 6-11 后台 · 限时秒杀：秒杀位商品的添加 / 替换 / 移除（上限 8 个）</div>
+</div>
+
+<div class="fig">
+  <img src="report-assets/admin-banner.png" alt="后台首页图片">
+  <div class="cap">图 6-12 后台 · 首页图片：轮播图与促销位配置</div>
 </div>
 
 <div class="fig">
   <img src="report-assets/admin-apply.png" alt="发布申请审核">
-  <div class="cap">图 6-8 后台 · 商品发布申请：状态筛选、申请信息与审核入口</div>
+  <div class="cap">图 6-13 后台 · 商品发布申请：状态筛选、申请信息与审核入口</div>
 </div>
 
 <div class="fig">
   <img src="report-assets/login.png" alt="登录注册">
-  <div class="cap">图 6-9 登录 / 注册页面</div>
+  <div class="cap">图 6-14 登录 / 注册页面</div>
 </div>
 
 <!-- ======================= 7 接口设计 ======================= -->
@@ -772,7 +841,7 @@
   业务异常、参数校验异常与系统异常都返回同一结构。
 </p>
 
-<h2>7.2 接口清单（共 39 个）</h2>
+<h2>7.2 接口清单（共 55 个）</h2>
 <table>
   <thead><tr><th style="width:9%">方法</th><th style="width:38%">路径</th><th>说明</th><th style="width:12%">权限</th></tr></thead>
   <tbody>
@@ -782,6 +851,10 @@
     <tr><td>PUT</td><td><code>/api/users/me</code></td><td>修改个人资料</td><td>登录</td></tr>
     <tr><td>GET</td><td><code>/api/categories</code></td><td>分类列表</td><td>公开</td></tr>
     <tr><td>GET</td><td><code>/api/categories/{id}</code></td><td>分类详情</td><td>公开</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/categories</code></td><td>后台分类列表（含商品数）</td><td>管理员</td></tr>
+    <tr><td>POST</td><td><code>/api/admin/categories</code></td><td>新增分类（重名 2013）</td><td>管理员</td></tr>
+    <tr><td>PUT</td><td><code>/api/admin/categories/{id}</code></td><td>编辑分类（含图标 / 封面）</td><td>管理员</td></tr>
+    <tr><td>DELETE</td><td><code>/api/admin/categories/{id}</code></td><td>删除分类（有商品 2012）</td><td>管理员</td></tr>
     <tr><td>GET</td><td><code>/api/products</code></td><td>商品分页（分类 / 关键词 / 状态）</td><td>公开</td></tr>
     <tr><td>GET</td><td><code>/api/products/{id}</code></td><td>商品详情（含 images）</td><td>公开</td></tr>
     <tr><td>POST</td><td><code>/api/products</code></td><td>新增商品</td><td>管理员</td></tr>
@@ -815,6 +888,18 @@
     <tr><td>GET</td><td><code>/api/admin/orders</code></td><td>全量订单</td><td>管理员</td></tr>
     <tr><td>GET</td><td><code>/api/admin/orders/pending-count</code></td><td>待发货数量</td><td>管理员</td></tr>
     <tr><td>GET</td><td><code>/api/admin/orders/summary</code></td><td>待付款 / 待发货摘要</td><td>管理员</td></tr>
+    <tr><td>GET</td><td><code>/api/banners</code></td><td>轮播图列表（仅启用）</td><td>公开</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/banners</code></td><td>全部轮播图（含停用）</td><td>管理员</td></tr>
+    <tr><td>POST</td><td><code>/api/admin/banners</code></td><td>新增轮播图（满 5 张 2011）</td><td>管理员</td></tr>
+    <tr><td>PUT</td><td><code>/api/admin/banners/{id}</code></td><td>替换轮播图</td><td>管理员</td></tr>
+    <tr><td>DELETE</td><td><code>/api/admin/banners/{id}</code></td><td>删除轮播图</td><td>管理员</td></tr>
+    <tr><td>GET</td><td><code>/api/home/promos</code></td><td>两个促销位图片地址</td><td>公开</td></tr>
+    <tr><td>PUT</td><td><code>/api/admin/home/promos</code></td><td>保存促销位图片</td><td>管理员</td></tr>
+    <tr><td>GET</td><td><code>/api/flash-sale</code></td><td>秒杀位列表（仅返回在售）</td><td>公开</td></tr>
+    <tr><td>GET</td><td><code>/api/admin/flash-sale</code></td><td>全部秒杀位</td><td>管理员</td></tr>
+    <tr><td>POST</td><td><code>/api/admin/flash-sale</code></td><td>添加（重复 2014 / 超限 2015）</td><td>管理员</td></tr>
+    <tr><td>PUT</td><td><code>/api/admin/flash-sale/{id}</code></td><td>替换为另一个商品</td><td>管理员</td></tr>
+    <tr><td>DELETE</td><td><code>/api/admin/flash-sale/{id}</code></td><td>移除秒杀位</td><td>管理员</td></tr>
   </tbody>
 </table>
 
@@ -831,7 +916,9 @@
     <tr><td>2004</td><td>订单状态不允许该操作</td><td>2005</td><td>该申请已审核</td></tr>
     <tr><td>2006</td><td>单张图片超过 5MB</td><td>2007</td><td>图片格式不支持</td></tr>
     <tr><td>2008</td><td>图片数量需为 1-9 张</td><td>2009</td><td>图片上传失败</td></tr>
-    <tr><td>2010</td><td>OSS 未配置 AccessKey</td><td>—</td><td>—</td></tr>
+    <tr><td>2010</td><td>OSS 未配置 AccessKey</td><td>2011</td><td>首页轮播图最多 5 张</td></tr>
+    <tr><td>2012</td><td>该分类下还有商品，无法删除</td><td>2013</td><td>分类名称已存在</td></tr>
+    <tr><td>2014</td><td>该商品已在秒杀列表中</td><td>2015</td><td>限时秒杀最多 8 件商品</td></tr>
   </tbody>
 </table>
 
@@ -889,9 +976,14 @@
 mysql -uroot -p &lt; src/main/resources/db/schema.sql
 mysql -uroot -p &lt; src/main/resources/db/data.sql
 
-# 已有旧库：按顺序执行增量迁移
+# 已有旧库：按顺序执行增量迁移（migration_1 ~ migration_7）
 mysql -uroot -p &lt; src/main/resources/db/migration_1_product_apply.sql
-mysql -uroot -p &lt; src/main/resources/db/migration_2_product_image.sql</pre>
+mysql -uroot -p &lt; src/main/resources/db/migration_2_product_image.sql
+mysql -uroot -p &lt; src/main/resources/db/migration_3_banner.sql
+mysql -uroot -p &lt; src/main/resources/db/migration_4_site_setting.sql
+mysql -uroot -p &lt; src/main/resources/db/migration_5_category_icon.sql
+mysql -uroot -p &lt; src/main/resources/db/migration_6_flash_sale.sql
+mysql -uroot -p &lt; src/main/resources/db/migration_7_category_cover.sql</pre>
 
 <h2>9.3 配置项</h2>
 <table>
@@ -926,7 +1018,9 @@ mysql -uroot -p &lt; src/main/resources/db/migration_2_product_image.sql</pre>
   <li>完成了一个可运行、可演示的前后端分离在线购物系统，覆盖商品、购物车、订单、地址等核心交易链路；</li>
   <li>实现了用户发布商品与管理员审核的 C2C 扩展，并通过事务与状态校验保证申请与正式商品的数据一致性；</li>
   <li>实现了商品多图上传、预览与详情页展示，接入阿里云 OSS 并支持本地存储回退；</li>
-  <li>完成了管理员数据看板、商品管理、订单管理与发布申请审核等运营能力；</li>
+  <li>实现了首页内容运营能力：轮播图、促销位、分类图标与封面、限时秒杀均可在后台自助配置；</li>
+  <li>完成了管理员数据看板、商品管理、分类管理、订单管理与发布申请审核等运营能力；</li>
+  <li>建立了全站统一的线性 SVG 图标体系与响应式布局，桌面端与移动端均可正常访问；</li>
   <li>形成了统一响应、统一异常、统一鉴权的后端基础设施，后续新增模块成本较低。</li>
 </ul>
 
@@ -936,6 +1030,8 @@ mysql -uroot -p &lt; src/main/resources/db/migration_2_product_image.sql</pre>
   <li>商品图片排序按上传顺序，暂未支持拖拽调整；</li>
   <li>商品与申请列表使用 <code>LIKE</code> 模糊查询，数据量增大后需要引入全文检索；</li>
   <li>下单成功后的「支付」为模拟状态流转，尚未接入真实支付渠道；</li>
+  <li>秒杀位无独立秒杀价与限时结束时间，仅做展示位编排；</li>
+  <li>单机部署，未引入缓存与消息队列；移动端页头导航尚未收纳为抽屉菜单；</li>
   <li>缺少自动化测试与持续集成流程。</li>
 </ul>
 
