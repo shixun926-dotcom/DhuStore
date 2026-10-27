@@ -129,6 +129,8 @@
 
 任何时刻只显示一个角标，始终指向当前最该点击的位置。
 
+> 私信未读不参与上述 `store.pending` 逻辑：它使用头像左上角的蓝色小点独立提示，语义与订单待办分开，见 2.10。
+
 ### 2.8 界面图标体系
 
 全站不再使用系统 emoji 做区分标识。emoji 在不同平台渲染为彩色 3D 字形，线宽、透视、配色无法统一，是界面"质感粗糙"的主要来源，故统一改为手写线性 SVG。
@@ -210,6 +212,42 @@
 
 ---
 
+### 2.10 社交关注与私信
+
+商品详情页承担"从商品到人"的入口：展示发布者、可关注、可直接发起会话。
+
+#### 关注
+
+- 详情页卖家卡展示头像、昵称、粉丝数，提供「关注 / 已关注」与「发消息」两个动作
+- 关注为幂等操作，重复关注不报错；取消未关注的关系同样返回成功
+- 不能关注自己（`3001`）；未登录点击关注或发消息会跳转登录页
+- 商品 `seller_id` 为空时表示平台自营，卡片显示「东华自营」，不提供关注与私信
+- 关注列表与粉丝列表均实时显示「互相关注」标记：关注列表中该标记表示"对方也关注了我"，粉丝列表中表示"我已回关"
+
+#### 私信
+
+会话模型的关键约束：**两个用户之间只有一条会话**。写入前把用户 ID 排序归一化为 `user1_id < user2_id`，配合唯一键保证并发下也只产生一条。
+
+| 能力 | 说明 |
+|---|---|
+| 会话创建 | `POST /api/conversations` 幂等：存在则返回原会话，不存在则创建 |
+| 消息类型 | `type=1` 纯文字（≤1000 字）；`type=2` 图片（复用 `POST /api/common/upload` 拿到地址后发送） |
+| 表情 | 输入框内置 24 个常用 emoji 的选择面板，点击插入文本，不引入第三方库 |
+| 实时推送 | WebSocket `/ws/chat?token=<JWT>`，仅下行；发送仍走 REST，落库成功后再推送 |
+| 断线兜底 | 通道断开时按 1/2/4/8/15 秒退避重连；重连后用 `afterId` 增量补齐 |
+| 已读 | 打开会话即标记该会话中发给我的消息为已读，返回我的未读总数 |
+| 未读角标 | 独立于订单待办：页头头像左上角蓝点、下拉菜单「消息」数字、个人中心身份卡「消息」格 |
+
+- 越权防护：所有 `/conversations/{id}/**` 均在服务层校验当前用户是会话参与者，「不存在」与「无权访问」统一返回 `3002`，避免用 id 探测他人会话
+- 图片消息只接受站内产物（`/uploads/` 或本桶 OSS 域名），否则返回 `3006`
+- 页头头像的蓝点与右侧订单角标分处头像两端，两种语义互不覆盖
+
+#### 个人中心
+
+身份卡的三格统计由「订单 / 购物车 / 地址」改为「关注 / 粉丝 / 消息」，点击分别进入对应列表或消息页；侧栏菜单保留「收货地址」与「我的订单」，结算与订单入口不受影响。
+
+---
+
 ## 三、技术栈
 
 ### 后端
@@ -224,6 +262,7 @@
 | spring-boot-starter-validation | Spring Boot 管理 | 参数校验 |
 | Lombok | Spring Boot 管理 | 简化样板代码 |
 | Aliyun OSS SDK | 3.17.4 | 图片上传 |
+| spring-boot-starter-websocket | Spring Boot 管理 | 私信实时推送（`/ws/chat`） |
 
 ### 前端
 
@@ -290,6 +329,9 @@ DhuStore
 | `banner` | 首页轮播图（`image_url` / `sort` / `status`，上限 5 张） |
 | `site_setting` | 站点配置键值对（当前存两个促销位图片地址） |
 | `flash_sale` | 首页限时秒杀位（`product_id` 唯一 / `sort`，只存商品引用不存快照） |
+| `follow` | 关注关系（`follower_id` / `followee_id` 唯一组合） |
+| `conversation` | 私信会话（`user1_id < user2_id` 归一化，两人唯一一条） |
+| `message` | 私信消息（`type` 1 文字 / 2 图片，`receiver_id` 冗余用于未读统计） |
 
 ### 订单状态
 
@@ -424,6 +466,29 @@ DhuStore
 | GET | `/api/admin/orders/pending-count` | 待发货数 | 管理员 |
 | GET | `/api/admin/orders/summary` | 待付款/待发货摘要 | 管理员 |
 
+### 社交关系
+
+| 方法 | 路径 | 说明 | 权限 |
+|---|---|---|---|
+| POST | `/api/follow/{userId}` | 关注（幂等） | 登录 |
+| DELETE | `/api/follow/{userId}` | 取消关注（幂等） | 登录 |
+| GET | `/api/follow/following?page=&size=` | 我的关注列表（含互相关注标记） | 登录 |
+| GET | `/api/follow/followers?page=&size=` | 我的粉丝列表 | 登录 |
+| GET | `/api/follow/stats` | 我的关注数与粉丝数 | 登录 |
+| GET | `/api/users/{id}/profile` | 公开资料（不含手机号/邮箱，含 `following` / `self`） | 可选登录 |
+| GET | `/api/products/{id}/seller` | 商品发布者摘要，自营返回 `platform=true` | 可选登录 |
+
+### 私信
+
+| 方法 | 路径 | 说明 | 权限 |
+|---|---|---|---|
+| GET | `/api/conversations` | 会话列表（对方信息 / 最后一条 / 未读数） | 登录 |
+| POST | `/api/conversations` | 打开或创建会话（幂等） | 登录 |
+| GET | `/api/conversations/{id}/messages?beforeId=&afterId=&size=` | 历史消息（`beforeId` 翻页）或增量消息（`afterId`） | 登录 |
+| POST | `/api/conversations/{id}/messages` | 发送消息 `{type, content}` | 登录 |
+| POST | `/api/conversations/{id}/read` | 标记已读，返回未读总数 | 登录 |
+| GET | `/api/messages/unread` | 我的未读消息总数 | 登录 |
+
 ---
 
 ## 七、业务状态码
@@ -454,6 +519,12 @@ DhuStore
 | 2013 | 分类名称已存在 |
 | 2014 | 该商品已在秒杀列表中 |
 | 2015 | 限时秒杀最多 8 件商品 |
+| 3001 | 不能关注自己 |
+| 3002 | 会话不存在或无权访问 |
+| 3003 | 消息内容不能为空 |
+| 3004 | 不能给自己发消息 |
+| 3005 | 消息类型不正确 |
+| 3006 | 图片地址不合法 |
 
 ---
 
@@ -540,6 +611,7 @@ mysql -uroot -p < src/main/resources/db/migration_4_site_setting.sql
 mysql -uroot -p < src/main/resources/db/migration_5_category_icon.sql
 mysql -uroot -p < src/main/resources/db/migration_6_flash_sale.sql
 mysql -uroot -p < src/main/resources/db/migration_7_category_cover.sql
+mysql -uroot -p < src/main/resources/db/migration_8_social.sql
 ```
 
 ### 2. 配置凭据
@@ -579,6 +651,7 @@ mvn spring-boot:run
   - `services.js`：业务服务（含图片上传）
   - `components.js`：页头、页脚、商品卡片、线性图标（`ui-icon` + `DH.icons` 注册表）、分类图标（`cat-icon`，全站唯一分类视觉出口）
   - `views/*`：各页面组件
+  - `chat.js`：私信实时通道客户端（连接 / 心跳 / 退避重连 / 事件订阅）
   - `chart.js`：SVG 图表引擎
 
 ---
@@ -599,6 +672,9 @@ mvn spring-boot:run
 - 秒杀位无独立秒杀价与限时结束时间，仅做展示位编排
 - 分类封面需运营逐个上传，未上传的分类只能显示色相渐变兜底
 - 秒杀卡不做划线原价，因 `product` 表缺少原价字段，需补列才能显示
+- 私信的 WebSocket 在线连接表为**单机内存实现**，多实例部署需替换为 Redis 广播，否则跨实例收不到推送
+- 反向代理部署时需放行 `Upgrade` / `Connection` 头，否则 `/ws/chat` 握手会退化为长轮询失败（前端会自动回退到增量轮询）
+- 私信入口只开放「商品详情页卖家卡」与「关注 / 粉丝列表」，不支持按用户名搜索任意用户发起会话
 
 ### 可扩展方向
 
@@ -623,6 +699,42 @@ mvn spring-boot:run
 ---
 
 ## 十四、更新记录
+
+### V2.1 ｜ 2026-10-27
+
+**新增**
+
+- 社交关注：关注 / 取消关注（幂等）、我的关注、我的粉丝、互相关注标记、关注数与粉丝数统计
+- 公开用户资料接口 `GET /api/users/{id}/profile`，只暴露昵称、头像、角色与关注数据，不含手机号与邮箱
+- 商品详情页发布者卡片：头像、昵称、粉丝数、「关注 / 已关注」、「发消息」；`seller_id` 为空时渲染「东华自营」且不提供操作
+- 私信：会话列表、会话幂等创建、历史消息分页、增量拉取、发送文字 / emoji / 图片、已读标记、未读总数
+- WebSocket 实时通道 `/ws/chat?token=<JWT>`：握手复用 JWT 校验，仅下行推送，发送仍走 REST 保证落库顺序
+- 前端 `chat.js`：连接管理、25 秒心跳、1/2/4/8/15 秒退避重连、事件订阅
+- 数据表 `follow` / `conversation` / `message`，迁移脚本 `db/migration_8_social.sql`
+- 业务码 `3001`–`3006`（关注自己、会话无权、消息为空、给自己发消息、类型错误、图片地址非法）
+- 线性图标新增 `chat` / `plus` / `send` / `heart` / `users` / `smile` 六个
+
+**变更**
+
+- 个人中心身份卡三格统计由「订单 / 购物车 / 地址」改为「关注 / 粉丝 / 消息」，点击分别进入关注列表、粉丝列表与消息页
+- 页头新增未读消息独立提示：头像左上角蓝点（有未读时才出现）+ 下拉菜单「消息」数字，与右侧订单待办角标互不覆盖
+- 侧栏菜单新增「消息 / 我的关注 / 我的粉丝」，保留「收货地址」与「我的订单」，结算与订单入口不受影响
+- 页签切换统一走 `goTab()`，修复侧栏直接点击时只改 `tab` 不加载数据的问题
+
+**影响范围**
+
+- 新增后端：`SocialService` / `SocialController` / `ChatService` / `ChatController` / `ChatNotifier` / `WebSocketChatNotifier`、`WebSocketConfig` / `JwtHandshakeInterceptor` / `ChatWebSocketHandler` / `ChatSessionRegistry`
+- 新增前端：`src/chat.js`；改动 `views/user.js`（消息、关注、粉丝三个面板）、`views/detail.js`（卖家卡）、`services.js`（社交与私信域）、`components.js`（页头与图标）、`core.js`（`unread` / `followStats`）、`index.html`（引入 chat.js）
+- 依赖新增 `spring-boot-starter-websocket`
+- 不改动既有接口契约与订单、购物车、地址逻辑
+
+**使用说明**
+
+- 私信入口：商品详情页卖家卡的「发消息」，或关注 / 粉丝列表每行的「发消息」
+- 消息页左侧为会话列表（未读数、最后一条摘要），右侧为消息流；打开会话即标记已读
+- 图片消息复用小图片上传通道（≤5MB，JPG / PNG / WEBP），发送前前端先做一次校验
+- WebSocket 断开不影响收发：消息落库走 REST，界面会自动重连并用 `afterId` 补齐断线期间的消息
+- 部署到反向代理后需放行 `Upgrade` / `Connection` 头，否则实时通道握手失败（功能仍可用，只是降级为手动刷新）
 
 ### V2.0 ｜ 2026-10-27
 
@@ -782,4 +894,4 @@ mvn spring-boot:run
 
 ---
 
-*文档版本：V2.0 ｜ 最后更新：2026-10-27*
+*文档版本：V2.1 ｜ 最后更新：2026-10-27*
