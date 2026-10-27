@@ -146,6 +146,7 @@ DH.boot = function (Vue) {
   /* 有 token 就恢复会话（含 role），再预取购物车/订单/地址供页头与个人中心使用 */
   DH.api.restoreSession().then(function (u) {
     if (!u) return;
+    DH.chat.connect();          /* 私信实时通道：先连上再预热数据，避免漏掉期间的新消息 */
     return SVC.warmUp();
   });
   SVC.loadCats().catch(function () {});

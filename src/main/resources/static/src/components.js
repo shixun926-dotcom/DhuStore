@@ -54,6 +54,12 @@ DH.icons = {
   arrowRight: '<path d="M4.6 12h14"/><path d="M13 6.4l5.6 5.6-5.6 5.6"/>',
   grid: '<rect x="3.6" y="3.6" width="7" height="7" rx="1.4"/><rect x="13.4" y="3.6" width="7" height="7" rx="1.4"/><rect x="3.6" y="13.4" width="7" height="7" rx="1.4"/><rect x="13.4" y="13.4" width="7" height="7" rx="1.4"/>',
   wallet: '<path d="M3.5 7.2h16.5a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H4a1.5 1.5 0 0 1-1.5-1.5V5.7A1.5 1.5 0 0 1 4 4.2h12.5"/><path d="M15.5 13h4"/><circle cx="16.5" cy="13.5" r=".4"/>',
+  chat: '<rect x="2.8" y="4.6" width="18.4" height="11.8" rx="2"/><path d="M7.6 16.4v3.6l4.2-3.6"/>',
+  plus: '<path d="M12 5.2v13.6M5.2 12h13.6"/>',
+  send: '<path d="M20.6 3.4 3.8 9.9l6.6 2.6 2.6 6.6 7.6-15.7Z"/><path d="M10.4 12.5 20.6 3.4"/>',
+  heart: '<path d="M12 20.4S3.8 15.2 3.8 9.4A4.6 4.6 0 0 1 12 6.7a4.6 4.6 0 0 1 8.2 2.7c0 5.8-8.2 11-8.2 11Z"/>',
+  smile: '<circle cx="12" cy="12" r="8.6"/><path d="M8.6 14.2c.9 1.3 2 2 3.4 2s2.5-.7 3.4-2"/><path d="M9.4 9.6h.01M14.6 9.6h.01"/>',
+  users: '<circle cx="9" cy="8.4" r="3.2"/><path d="M3.4 19.6c0-3 2.5-4.9 5.6-4.9s5.6 1.9 5.6 4.9"/><path d="M16.2 5.6a3.2 3.2 0 0 1 0 6"/><path d="M17.6 14.9c1.9.5 3.1 1.9 3.1 3.9"/>',
   dot: '<circle cx="12" cy="12" r="7"/>'
 };
 
@@ -138,10 +144,13 @@ DH.components['app-header'] = {
     '          </template>',
     '          <template v-else><span class="g"><ui-icon name="user" :size="18"></ui-icon></span><span>登录 / 注册</span></template>',
     '          <span class="badge" v-if="showAvatarBadge">{{ pendingCount }}</span>',
+    '          <span class="dot-msg" v-if="store.user && store.unread>0"',
+    '                :title="store.unread + \' 条未读消息\'"></span>',
     '        </button>',
     '        <div class="drop" v-if="menu" @click="menu=false">',
     '          <template v-if="store.user">',
     '            <a href="#/user" @click.prevent="go(\'/user\')"><ui-icon name="user" :size="16"></ui-icon>个人中心</a>',
+    '            <a href="#/user" @click.prevent="go(\'/user\',\'tab=msg\')"><ui-icon name="chat" :size="16"></ui-icon>消息<b class="cnt" v-if="store.unread>0">{{ store.unread > 99 ? \'99+\' : store.unread }}</b></a>',
     '            <a href="#/orders" @click.prevent="go(\'/orders\')"><ui-icon name="box" :size="16"></ui-icon>我的订单<b class="cnt" v-if="!isAdmin && pendingCount>0">{{ pendingCount }}</b></a>',
     '            <a href="#/user" @click.prevent="go(\'/user\',\'tab=addr\')"><ui-icon name="pin" :size="16"></ui-icon>收货地址</a>',
     '            <template v-if="store.user.role===1">',

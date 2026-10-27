@@ -160,6 +160,7 @@ function login(username, password) {
     }).then(function (me) {
       S().user = me;
       U.LS.set('dh_user', me);
+      if (DH.chat) DH.chat.connect();   /* 登录后建立私信通道 */
       return me;
     });
 }
@@ -196,7 +197,9 @@ function warmUp() {
     loadCart().catch(function () {}),
     loadOrders().catch(function () {}),
     loadAddresses().catch(function () {}),
-    loadPending().catch(function () {})
+    loadPending().catch(function () {}),
+    loadFollowStats().catch(function () {}),
+    loadUnread().catch(function () {})
   ]);
 }
 
@@ -624,6 +627,111 @@ function removeFlashSale(slotId) {
     .then(function () { return loadFlashSale(); });
 }
 
+/* --------------------------------------------------------- 九、社交（关注） */
+
+/** 商品发布者摘要：platform=true 表示平台自营，不提供关注与私信 */
+function loadSeller(productId) {
+  return api('GET', '/products/' + productId + '/seller');
+}
+
+/** 公开资料（不含手机号/邮箱）：含关注数、粉丝数、我是否已关注 */
+function loadPublicProfile(userId) {
+  return api('GET', '/users/' + userId + '/profile');
+}
+
+function followUser(userId) {
+  return api('POST', '/follow/' + userId);
+}
+
+function unfollowUser(userId) {
+  return api('DELETE', '/follow/' + userId);
+}
+
+function loadFollowing() {
+  return api('GET', '/follow/following?page=1&size=100').then(function (d) { return U.listOf(d); });
+}
+
+function loadFollowers() {
+  return api('GET', '/follow/followers?page=1&size=100').then(function (d) { return U.listOf(d); });
+}
+
+/** 关注数 / 粉丝数，结果写入 store 供身份卡直接渲染 */
+function loadFollowStats() {
+  return api('GET', '/follow/stats').then(function (d) {
+    if (S() && d) S().followStats = { following: Number(d.following) || 0, followers: Number(d.followers) || 0 };
+    return S() ? S().followStats : { following: 0, followers: 0 };
+  });
+}
+
+/**
+ * 关注 / 取消关注并维护本地计数。
+ * target 需带 id 与 following 字段（来自 loadSeller / loadPublicProfile / 列表行），
+ * followerCount 若存在会一并增减，保证按钮与粉丝数同步。
+ */
+function toggleFollow(target) {
+  var next = !target.following;
+  var req = next ? followUser(target.id) : unfollowUser(target.id);
+  return req.then(function () {
+    target.following = next;
+    if (typeof target.followerCount === 'number') {
+      target.followerCount = Math.max(0, target.followerCount + (next ? 1 : -1));
+    }
+    if (S() && S().followStats) {
+      S().followStats.following = Math.max(0, (S().followStats.following || 0) + (next ? 1 : -1));
+    }
+    DH.toast(next ? '已关注' : '已取消关注', next ? '✅' : '👋');
+    return next;
+  }, function (e) {
+    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+    return target.following;
+  });
+}
+
+/* --------------------------------------------------------- 十、私信 */
+
+/** 会话列表：对方资料 + 最后一条摘要 + 我的未读数 */
+function loadConversations() {
+  return api('GET', '/conversations').then(function (d) { return U.listOf(d); });
+}
+
+/** 打开与某人的会话（幂等），返回会话对象 */
+function startConversation(userId) {
+  return api('POST', '/conversations', { userId: userId });
+}
+
+/** 历史消息：传 beforeId 翻更早的一页；不传取最新 30 条 */
+function loadMessages(conversationId, beforeId) {
+  var q = '?size=30' + (beforeId ? '&beforeId=' + beforeId : '');
+  return api('GET', '/conversations/' + conversationId + '/messages' + q);
+}
+
+/** 增量消息：断线重连或降级轮询时补齐 afterId 之后的内容 */
+function loadMessagesAfter(conversationId, afterId) {
+  return api('GET', '/conversations/' + conversationId + '/messages?afterId=' + (afterId || 0));
+}
+
+function sendMessage(conversationId, payload) {
+  return api('POST', '/conversations/' + conversationId + '/messages', payload);
+}
+
+/** 标记已读，返回我的未读总数并同步到 store */
+function markConversationRead(conversationId) {
+  return api('POST', '/conversations/' + conversationId + '/read').then(function (d) {
+    var n = Number((d && d.unread) || 0);
+    if (S()) S().unread = n;
+    return n;
+  });
+}
+
+/** 未读总数（独立于订单待办角标） */
+function loadUnread() {
+  return api('GET', '/messages/unread').then(function (d) {
+    var n = Number((d && d.unread) || 0);
+    if (S()) S().unread = n;
+    return n;
+  });
+}
+
 DH.services = {
   /* 商品与分类 */
   buildQuery: buildQuery, adapt: adapt, adaptCart: adaptCart,
@@ -657,7 +765,15 @@ DH.services = {
   loadAdminCats: loadAdminCats, saveCategory: saveCategory, deleteCategory: deleteCategory,
   /* 限时秒杀位 */
   loadFlashSale: loadFlashSale, loadAdminFlashSale: loadAdminFlashSale,
-  addFlashSale: addFlashSale, replaceFlashSale: replaceFlashSale, removeFlashSale: removeFlashSale
+  addFlashSale: addFlashSale, replaceFlashSale: replaceFlashSale, removeFlashSale: removeFlashSale,
+  /* 社交（关注） */
+  loadSeller: loadSeller, loadPublicProfile: loadPublicProfile,
+  followUser: followUser, unfollowUser: unfollowUser, toggleFollow: toggleFollow,
+  loadFollowing: loadFollowing, loadFollowers: loadFollowers, loadFollowStats: loadFollowStats,
+  /* 私信 */
+  loadConversations: loadConversations, startConversation: startConversation,
+  loadMessages: loadMessages, loadMessagesAfter: loadMessagesAfter, sendMessage: sendMessage,
+  markConversationRead: markConversationRead, loadUnread: loadUnread
 };
 
 })(window.DH);

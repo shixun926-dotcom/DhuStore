@@ -218,6 +218,10 @@ DH.initStore = function (Vue) {
     addresses: [],
     /* 待处理提醒数：管理员=待发货，用户=待收货 */
     pending: 0,
+    /* 我的关注数 / 粉丝数（个人中心身份卡） */
+    followStats: { following: 0, followers: 0 },
+    /* 私信未读总数，独立于订单待办角标 */
+    unread: 0,
     /* 交互态 */
     busy: false,
     toasts: []
@@ -311,7 +315,10 @@ function clearSession() {
   LS.set('dh_token', null);
   LS.set('dh_user', null);
   var s = DH.store;
-  if (s) { s.user = null; s.cart = []; s.orders = []; s.addresses = []; s.pending = 0; }
+  if (s) { s.user = null; s.cart = []; s.orders = []; s.addresses = []; s.pending = 0;
+           s.followStats = { following: 0, followers: 0 }; s.unread = 0; }
+  /* 会话失效时同步断开私信通道，避免残留连接继续接收推送 */
+  if (DH.chat) DH.chat.disconnect();
 }
 
 function request(method, path, body) {

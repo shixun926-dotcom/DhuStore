@@ -3,8 +3,11 @@ package com.wenhe.dhustore.controller;
 import com.wenhe.dhustore.common.PageResult;
 import com.wenhe.dhustore.common.Result;
 import com.wenhe.dhustore.annotation.RequireAdmin;
+import com.wenhe.dhustore.dto.SellerVO;
 import com.wenhe.dhustore.entity.Product;
 import com.wenhe.dhustore.service.ProductService;
+import com.wenhe.dhustore.service.SocialService;
+import com.wenhe.dhustore.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductController {
 
     private final ProductService productService;
+    private final SocialService socialService;
 
     @GetMapping
     public Result<PageResult<Product>> page(
@@ -36,6 +40,12 @@ public class ProductController {
     @GetMapping("/{id}")
     public Result<Product> get(@PathVariable Long id) {
         return Result.success(productService.get(id));
+    }
+
+    /** 详情页发布者摘要：seller_id 为空时返回平台自营（platform=true） */
+    @GetMapping("/{id}/seller")
+    public Result<SellerVO> seller(@PathVariable Long id) {
+        return Result.success(socialService.sellerOfProduct(id, UserContext.getUserId()));
     }
 
     @PostMapping

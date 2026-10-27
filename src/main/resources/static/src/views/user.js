@@ -60,13 +60,14 @@ DH.views['user-view'] = {
         <div class="nm">{{ store.user.nickname || store.user.username }}</div>
         <div class="lv"><ui-icon name="diamond" :size="12"></ui-icon> {{ store.user.role===1 ? '超级管理员' : 'V2 黄金会员' }}</div>
         <div class="uc-stats">
-          <div><b>{{ store.orders.length }}</b><small>订单</small></div>
-          <div><b>{{ store.cart.length }}</b><small>购物车</small></div>
-          <div><b>{{ store.addresses.length }}</b><small>地址</small></div>
+          <a href="#" @click.prevent="goTab('following')"><b>{{ store.followStats.following }}</b><small>关注</small></a>
+          <a href="#" @click.prevent="goTab('followers')"><b>{{ store.followStats.followers }}</b><small>粉丝</small></a>
+          <a href="#" @click.prevent="goTab('msg')">
+            <b :class="{ hot: store.unread>0 }">{{ store.unread }}</b><small>消息</small></a>
         </div>
       </div>
       <nav class="card uc-nav">
-        <a v-for="m in menus" :key="m.k" href="#" @click.prevent="tab=m.k" :class="{ on: tab===m.k }">
+        <a v-for="m in menus" :key="m.k" href="#" @click.prevent="goTab(m.k)" :class="{ on: tab===m.k }">
           <ui-icon :name="m.ic" :size="16"></ui-icon>{{ m.t }}
         </a>
         <a href="#" class="out" @click.prevent="logout"><ui-icon name="logout" :size="16"></ui-icon>退出登录</a>
@@ -139,6 +140,158 @@ DH.views['user-view'] = {
           <button class="btn btn-primary" :disabled="saving" @click="saveInfo">
             {{ saving ? '保存中…' : '保存修改' }}</button>
         </footer>
+      </div>
+
+      <!-- 消息：左侧会话列表 + 右侧聊天窗口 -->
+      <div class="card uc-chat" v-else-if="tab==='msg'">
+        <aside class="chat-side">
+          <div class="chat-side-hd">
+            <h3>消息</h3>
+            <span v-if="store.unread>0">{{ store.unread }} 条未读</span>
+          </div>
+          <div class="chat-convs">
+            <div class="conv" v-for="c in conversations" :key="c.id"
+                 :class="{ on: activeConv && activeConv.id===c.id }" @click="openConversation(c)">
+              <div class="conv-av" :class="{ img: !!c.peerAvatar }">
+                <img v-if="c.peerAvatar" :src="c.peerAvatar" :alt="c.peerName">
+                <span v-else>{{ (c.peerName || '?').charAt(0) }}</span>
+              </div>
+              <div class="conv-tx">
+                <div class="conv-nm">
+                  <span class="conv-name">{{ c.peerName }}</span>
+                  <span class="conv-time">{{ shortTime(c.lastTime) }}</span>
+                </div>
+                <div class="conv-last" :class="{ unread: c.unread>0 }">{{ c.lastContent || '开始聊天吧' }}</div>
+              </div>
+              <span class="conv-badge" v-if="c.unread>0">{{ c.unread > 99 ? '99+' : c.unread }}</span>
+            </div>
+            <div v-if="!conversations.length" class="chat-tip">
+              <ui-icon name="chat" :size="26"></ui-icon>
+              <p>还没有会话</p>
+              <span>在商品详情页点「发消息」即可开始</span>
+            </div>
+          </div>
+        </aside>
+
+        <section class="chat-main" v-if="activeConv">
+          <header class="chat-hd">
+            <b>{{ activeConv.peerName }}</b>
+            <span class="chat-state" :class="{ on: wsOn }">{{ wsOn ? '实时在线' : '连接中…' }}</span>
+          </header>
+
+          <div class="chat-msgs" ref="msgBox">
+            <div class="chat-more" v-if="hasMore" @click="loadOlder">
+              {{ loadingMore ? '加载中…' : '查看更早的消息' }}
+            </div>
+            <div class="msg-flow">
+              <div class="msg" v-for="m in messages" :key="m.id" :class="{ mine: m.mine }">
+                <div class="bubble" :class="{ 'bubble-img': m.type===2 }">
+                  <img v-if="m.type===2" :src="m.content" alt=""
+                       @load="scrollBottom" @error="imgBroken($event)">
+                  <template v-else>{{ m.content }}</template>
+                </div>
+                <div class="msg-time">{{ shortTime(m.createTime) }}</div>
+              </div>
+            </div>
+            <div v-if="!messages.length" class="chat-tip">
+              <ui-icon name="chat" :size="26"></ui-icon>
+              <p>还没有消息</p><span>发条消息打个招呼吧</span>
+            </div>
+          </div>
+
+          <footer class="chat-input">
+            <button class="ci-btn" title="表情" @click="emojiOpen=!emojiOpen">
+              <ui-icon name="smile" :size="18"></ui-icon>
+            </button>
+            <button class="ci-btn" title="发送图片" @click="$refs.chatFile.click()">
+              <ui-icon name="image" :size="18"></ui-icon>
+            </button>
+            <textarea class="ci-text" rows="1" v-model="chatText" :disabled="sending"
+                      placeholder="输入消息，Enter 发送" @keydown.enter.exact.prevent="sendText"></textarea>
+            <button class="ci-send" :disabled="sending || !chatText.trim()" @click="sendText">
+              <ui-icon name="send" :size="17"></ui-icon>
+            </button>
+            <div class="emoji-pop" v-if="emojiOpen">
+              <span v-for="e in EMOJIS" :key="e" @click="insertEmoji(e)">{{ e }}</span>
+            </div>
+            <input type="file" ref="chatFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
+                   @change="onPickChatImage">
+          </footer>
+        </section>
+
+        <section class="chat-main chat-blank" v-else>
+          <div class="chat-tip">
+            <ui-icon name="chat" :size="32"></ui-icon>
+            <p>选择一个会话开始聊天</p>
+            <span>消息会实时推送到这里</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- 我的关注 -->
+      <div class="card pad" v-else-if="tab==='following'">
+        <div class="uc-list-hd">
+          <h3>我的关注</h3><span>{{ followingTotal }} 人</span>
+        </div>
+        <div v-if="followLoading" class="state"><div class="spin"></div><div class="d">正在加载…</div></div>
+        <div v-else-if="followingList.length" class="user-list">
+          <div class="user-row" v-for="u in followingList" :key="u.id">
+            <div class="user-av" :class="{ img: !!u.avatar }">
+              <img v-if="u.avatar" :src="u.avatar" :alt="u.nickname">
+              <span v-else>{{ (u.nickname || u.username || '?').charAt(0) }}</span>
+            </div>
+            <div class="user-tx">
+              <div class="user-nm">
+                {{ u.nickname || u.username }}
+                <span class="tag tag-brand" v-if="u.role===1">管理员</span>
+                <span class="tag" v-if="u.mutual">互相关注</span>
+              </div>
+              <div class="user-sub">{{ u.followerCount }} 位粉丝 · {{ fmt(u.followTime) }} 关注</div>
+            </div>
+            <div class="user-acts">
+              <button class="btn btn-sm btn-danger" :disabled="followBusy" @click="toggleRow(u, true)">取消关注</button>
+              <button class="btn btn-sm" @click="openChatWith(u.id)"><ui-icon name="chat" :size="14"></ui-icon> 发消息</button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty">
+          <div class="ico"><ui-icon name="heart" :size="34"></ui-icon></div><div>还没有关注任何人</div>
+          <button class="btn btn-primary" @click="go('/list')">去逛逛</button>
+        </div>
+      </div>
+
+      <!-- 我的粉丝 -->
+      <div class="card pad" v-else-if="tab==='followers'">
+        <div class="uc-list-hd">
+          <h3>我的粉丝</h3><span>{{ followerTotal }} 人</span>
+        </div>
+        <div v-if="followLoading" class="state"><div class="spin"></div><div class="d">正在加载…</div></div>
+        <div v-else-if="followerList.length" class="user-list">
+          <div class="user-row" v-for="u in followerList" :key="u.id">
+            <div class="user-av" :class="{ img: !!u.avatar }">
+              <img v-if="u.avatar" :src="u.avatar" :alt="u.nickname">
+              <span v-else>{{ (u.nickname || u.username || '?').charAt(0) }}</span>
+            </div>
+            <div class="user-tx">
+              <div class="user-nm">
+                {{ u.nickname || u.username }}
+                <span class="tag tag-brand" v-if="u.role===1">管理员</span>
+                <span class="tag" v-if="u.mutual">互相关注</span>
+              </div>
+              <div class="user-sub">{{ u.followerCount }} 位粉丝 · {{ fmt(u.followTime) }} 关注了你</div>
+            </div>
+            <div class="user-acts">
+              <button class="btn btn-sm" :class="{ 'btn-primary': !u.following }"
+                      :disabled="followBusy" @click="toggleRow(u, false)">
+                {{ u.following ? '已回关' : '回关' }}
+              </button>
+              <button class="btn btn-sm" @click="openChatWith(u.id)"><ui-icon name="chat" :size="14"></ui-icon> 发消息</button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty">
+          <div class="ico"><ui-icon name="users" :size="34"></ui-icon></div><div>还没有粉丝</div>
+        </div>
       </div>
 
       <!-- 收货地址 -->
@@ -286,11 +439,25 @@ DH.views['user-view'] = {
       myApplies: [], applyLoading: false,
       menus: [
         { k: 'info', ic: 'user', t: '个人资料' },
+        { k: 'msg', ic: 'chat', t: '消息' },
+        { k: 'following', ic: 'heart', t: '我的关注' },
+        { k: 'followers', ic: 'users', t: '我的粉丝' },
         { k: 'addr', ic: 'pin', t: '收货地址' },
         { k: 'order', ic: 'box', t: '我的订单' },
         { k: 'publish', ic: 'bag', t: '申请发布商品' },
         { k: 'myapply', ic: 'file', t: '我的商品申请' }
-      ]
+      ],
+      /* 关注 / 粉丝列表（P1） */
+      followLoading: false, followBusy: false,
+      followingList: [], followingTotal: 0,
+      followerList: [], followerTotal: 0,
+      /* 私信：会话列表 + 当前会话 + 消息流 */
+      conversations: [], activeConv: null, messages: [],
+      hasMore: false, loadingMore: false,
+      chatText: '', sending: false, emojiOpen: false, wsOn: false,
+      EMOJIS: ['😀', '😄', '😊', '😉', '😍', '🤔', '😅', '😭', '😡', '👍', '👏', '🙏',
+               '🎉', '❤️', '🔥', '✨', '💰', '📦', '🚚', '✅', '❓', '🌹', '☕', '🐟'],
+      _chatBound: null
     };
   },
   /* 头像展示源：本地预览优先；本次点了移除则回退为首字，保存后由服务端值接管。
@@ -302,7 +469,18 @@ DH.views['user-view'] = {
       return (this.store.user && this.store.user.avatar) || '';
     }
   },
-  mounted: function () { this.sync(); },
+  mounted: function () {
+    this.sync();
+    this.wsOn = !!(DH.chat && DH.chat.connected());
+    /* 私信推送：新消息、未读变化、重连成功都要反映到列表 */
+    var self = this;
+    this._chatBound = function (evt) { self.onChatEvent(evt); };
+    if (DH.chat) DH.chat.on(this._chatBound);
+  },
+  unmounted: function () {
+    if (DH.chat && this._chatBound) DH.chat.off(this._chatBound);
+    this._chatBound = null;
+  },
   watch: {
     /* #/user?tab=login|reg|info|addr|order 直接决定打开哪个面板 */
     'route.query.tab': { immediate: true, handler: function (v) { this.applyTab(v); } },
@@ -312,9 +490,21 @@ DH.views['user-view'] = {
     applyTab: function (v) {
       if (v === 'reg') this.mode = 'reg';
       else if (v === 'login') this.mode = 'login';
-      if (v === 'addr' || v === 'order' || v === 'info' || v === 'publish' || v === 'myapply') this.tab = v;
+      if (v === 'addr' || v === 'order' || v === 'info' || v === 'publish' || v === 'myapply'
+          || v === 'following' || v === 'followers' || v === 'msg') this.tab = v;
       if (v === 'publish') SVC.loadCats().catch(function () {});
       if (v === 'myapply') this.loadMyApplies();
+      if (v === 'following') this.loadFollowing();
+      if (v === 'followers') this.loadFollowers();
+      if (v === 'msg') this.enterMessages();
+    },
+    /* 进入消息页：拉会话列表，带了 to 参数则直接打开与该用户的会话 */
+    enterMessages: function () {
+      var self = this;
+      var to = this.route.query ? this.route.query.to : null;
+      this.loadConversations().then(function () {
+        if (to) self.openConversationWith(to);
+      });
     },
     /* 登录态变化时把资料表单与三份服务端数据同步过来 */
     sync: function () {
@@ -502,6 +692,240 @@ DH.views['user-view'] = {
         });
     },
     removeApplyImage: function (i) { this.af2.images.splice(i, 1); },
+    /* ---------- 关注 / 粉丝 ---------- */
+    loadFollowing: function () {
+      var self = this;
+      this.followLoading = true;
+      SVC.loadFollowing().then(function (list) {
+        /* 关注列表里的每一行，我必然已关注该用户 */
+        self.followingList = list.map(function (u) { u.following = true; return u; });
+        self.followingTotal = self.followingList.length;
+        self.followLoading = false;
+      }, function (e) {
+        self.followLoading = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    loadFollowers: function () {
+      var self = this;
+      this.followLoading = true;
+      SVC.loadFollowers().then(function (list) {
+        /* 粉丝列表的 mutual 等于「我是否已回关」 */
+        self.followerList = list.map(function (u) { u.following = !!u.mutual; return u; });
+        self.followerTotal = self.followerList.length;
+        self.followLoading = false;
+      }, function (e) {
+        self.followLoading = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    /* inFollowingTab：在「我的关注」里取消关注后要把该行移出列表 */
+    toggleRow: function (u, inFollowingTab) {
+      var self = this;
+      this.followBusy = true;
+      SVC.toggleFollow(u).then(function (now) {
+        self.followBusy = false;
+        if (inFollowingTab) {
+          if (!now) {
+            self.followingList = self.followingList.filter(function (x) { return x.id !== u.id; });
+            self.followingTotal = Math.max(0, self.followingTotal - 1);
+          }
+        } else {
+          u.mutual = now;
+        }
+        SVC.loadFollowStats().catch(function () {});
+      });
+    },
+    /* 切页签的统一入口：侧栏菜单与身份卡三格都走这里，避免只改 tab 不加载数据 */
+    goTab: function (k) {
+      this.tab = k;
+      if (k === 'following') this.loadFollowing();
+      if (k === 'followers') this.loadFollowers();
+      if (k === 'msg') this.enterMessages();
+      if (k === 'myapply') this.loadMyApplies();
+      if (k === 'publish') SVC.loadCats().catch(function () {});
+    },
+    /* ---------- 私信 ---------- */
+    loadConversations: function () {
+      var self = this;
+      return SVC.loadConversations().then(function (list) {
+        self.conversations = list;
+        return list;
+      }, function (e) {
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+        return [];
+      });
+    },
+    /* 与某人开会话（幂等）：已存在则直接复用列表里的对象，保持选中态一致 */
+    openConversationWith: function (userId) {
+      var self = this;
+      if (!userId) return;
+      SVC.startConversation(userId).then(function (c) {
+        var exists = self.conversations.filter(function (x) { return x.id === c.id; })[0];
+        if (!exists) self.conversations.unshift(c);
+        self.openConversation(exists || c);
+      }, function (e) {
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    openConversation: function (c) {
+      var self = this;
+      this.activeConv = c;
+      this.messages = [];
+      this.hasMore = false;
+      this.emojiOpen = false;
+      this.loadMessages(c.id).then(function (list) {
+        self.hasMore = list.length >= 30;
+        return SVC.markConversationRead(c.id).then(function () {
+          c.unread = 0;
+          self.$nextTick(self.scrollBottom);
+        });
+      }).catch(function () { /* 401 已统一处理 */ });
+    },
+    loadMessages: function (convId, beforeId) {
+      var self = this;
+      this.loadingMore = !!beforeId;
+      return SVC.loadMessages(convId, beforeId).then(function (list) {
+        if (beforeId) {
+          self.messages = list.concat(self.messages);
+        } else {
+          self.messages = list;
+          self.$nextTick(self.scrollBottom);
+        }
+        self.loadingMore = false;
+        return list;
+      }, function (e) {
+        self.loadingMore = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+        return [];
+      });
+    },
+    loadOlder: function () {
+      if (!this.activeConv || !this.messages.length || this.loadingMore) return;
+      var self = this;
+      this.loadMessages(this.activeConv.id, this.messages[0].id).then(function (list) {
+        self.hasMore = list.length >= 30;
+      });
+    },
+    sendText: function () {
+      var text = (this.chatText || '').trim();
+      if (!text || !this.activeConv || this.sending) return;
+      var self = this;
+      this.sending = true;
+      SVC.sendMessage(this.activeConv.id, { type: 1, content: text }).then(function (m) {
+        self.chatText = '';
+        self.sending = false;
+        self.appendMessage(m);
+        self.bumpConv(m);
+      }, function (e) {
+        self.sending = false;
+        if (e !== U.HANDLED) self.toast(U.errMsg(e), '⚠️');
+      });
+    },
+    /* 图片消息：先走通用上传拿 URL，再作为 type=2 发送 */
+    onPickChatImage: function (e) {
+      var self = this;
+      var file = (e.target.files || [])[0];
+      e.target.value = '';
+      if (!file || !this.activeConv) return;
+      var err = SVC.checkImage(file);
+      if (err) return this.toast(err, '⚠️');
+      this.sending = true;
+      SVC.uploadImage(file).then(function (url) {
+        return SVC.sendMessage(self.activeConv.id, { type: 2, content: url });
+      }).then(function (m) {
+        self.sending = false;
+        self.appendMessage(m);
+        self.bumpConv(m);
+      }, function (e2) {
+        self.sending = false;
+        if (e2 !== U.HANDLED) self.toast(U.errMsg(e2), '⚠️');
+      });
+    },
+    /* 图片消息加载失败：换成透明占位图，避免浏览器显示裂图图标 */
+    imgBroken: function (e) {
+      var img = e.target;
+      img.classList.add('broken');
+      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    },
+    insertEmoji: function (e) {
+      this.chatText = (this.chatText || '') + e;
+    },
+    /* 按 id 去重：WebSocket 推送与本地发送可能同时到达同一条消息 */
+    appendMessage: function (m) {
+      if (!m || !m.id) return;
+      for (var i = 0; i < this.messages.length; i++) {
+        if (this.messages[i].id === m.id) return;
+      }
+      this.messages.push(m);
+      var self = this;
+      this.$nextTick(function () { self.scrollBottom(); });
+    },
+    /* 当前会话有新消息：同步摘要并把会话提到列表顶部 */
+    bumpConv: function (m) {
+      var c = this.activeConv;
+      if (!c || !m) return;
+      c.lastContent = m.type === 2 ? '[图片]' : m.content;
+      c.lastType = m.type;
+      c.lastTime = m.createTime;
+      c.lastSenderId = m.senderId;
+      var list = this.conversations.filter(function (x) { return x.id !== c.id; });
+      list.unshift(c);
+      this.conversations = list;
+    },
+    scrollBottom: function () {
+      var box = this.$refs.msgBox;
+      if (box) box.scrollTop = box.scrollHeight;
+    },
+    /* 今天只显示时分，跨天补上日期 */
+    shortTime: function (t) {
+      if (!t) return '';
+      var d = new Date(String(t).replace(/\//g, '-').replace(' ', 'T'));
+      if (isNaN(d.getTime())) return '';
+      var now = new Date();
+      var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+      var sameDay = d.getFullYear() === now.getFullYear()
+        && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+      return sameDay
+        ? pad(d.getHours()) + ':' + pad(d.getMinutes())
+        : pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    },
+    /* WebSocket 事件入口 */
+    onChatEvent: function (evt) {
+      if (!evt) return;
+      if (evt.event === 'open') {
+        this.wsOn = true;
+        if (this.tab === 'msg') this.loadConversations();
+        return;
+      }
+      if (evt.event === 'close') { this.wsOn = false; return; }
+      if (evt.event === 'unread') {
+        if (typeof evt.unread === 'number') this.store.unread = evt.unread;
+        return;
+      }
+      if (evt.event !== 'message' || !evt.data) return;
+      var m = evt.data;
+      if (!m.mine && typeof evt.unread === 'number') this.store.unread = evt.unread;
+      if (this.activeConv && m.conversationId === this.activeConv.id) {
+        this.appendMessage(m);
+        if (!m.mine) SVC.markConversationRead(this.activeConv.id).catch(function () {});
+      }
+      if (this.tab === 'msg') {
+        var self = this;
+        this.loadConversations().then(function () {
+          if (self.activeConv) {
+            var cur = self.conversations.filter(function (x) { return x.id === self.activeConv.id; })[0];
+            if (cur) self.activeConv = cur;
+          }
+        });
+      }
+    },
+    /* 从列表进入会话：交给消息页按 to 参数打开 */
+    openChatWith: function (id) {
+      if (!id) return;
+      if (this.tab === 'msg') return this.openConversationWith(id);
+      this.go('/user?tab=msg&to=' + id);
+    },
     loadMyApplies: function () {
       var self = this;
       this.applyLoading = true;

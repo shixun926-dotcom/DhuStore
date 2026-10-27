@@ -3,7 +3,7 @@ package com.wenhe.dhustore.common;
 import lombok.Getter;
 
 /**
- * 业务状态码。200 成功；4xx 通用；1xxx 用户；2xxx 商品/购物车/订单。
+ * 业务状态码。200 成功；4xx 通用；1xxx 用户；2xxx 商品/购物车/订单；3xxx 社交与私信。
  */
 @Getter
 public enum ResultCode {
@@ -33,7 +33,14 @@ public enum ResultCode {
     CATEGORY_NOT_EMPTY(2012, "该分类下还有商品，无法删除"),
     CATEGORY_NAME_EXISTS(2013, "分类名称已存在"),
     FLASH_DUPLICATE(2014, "该商品已在秒杀列表中"),
-    FLASH_LIMIT(2015, "限时秒杀最多 8 件商品");
+    FLASH_LIMIT(2015, "限时秒杀最多 8 件商品"),
+
+    FOLLOW_SELF(3001, "不能关注自己"),
+    CONVERSATION_NOT_FOUND(3002, "会话不存在或无权访问"),
+    MESSAGE_EMPTY(3003, "消息内容不能为空"),
+    MESSAGE_TO_SELF(3004, "不能给自己发消息"),
+    MESSAGE_TYPE_ERROR(3005, "消息类型不正确"),
+    MESSAGE_IMAGE_INVALID(3006, "图片地址不合法");
 
     private final int code;
     private final String message;

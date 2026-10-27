@@ -107,6 +107,34 @@ DH.views['detail-view'] = {
       </div>
     </div>
 
+    <!-- 发布者：用户发布的商品展示卖家与关注/私信入口；平台商品显示自营标识 -->
+    <div class="card seller-card" v-if="seller">
+      <div class="seller-av" :class="{ img: !!seller.avatar }">
+        <img v-if="seller.avatar" :src="seller.avatar" :alt="seller.nickname">
+        <span v-else>{{ (seller.nickname || '店').charAt(0) }}</span>
+      </div>
+      <div class="seller-tx">
+        <div class="seller-nm">
+          {{ seller.nickname }}
+          <span class="tag tag-brand" v-if="!seller.platform && seller.role===1">管理员</span>
+        </div>
+        <div class="seller-sub" v-if="seller.platform">由东华购物官方发货并提供售后</div>
+        <div class="seller-sub" v-else>
+          <b>{{ seller.followerCount }}</b> 位粉丝<span v-if="seller.self" class="seller-me">这是你自己发布的商品</span>
+        </div>
+      </div>
+      <div class="seller-acts" v-if="!seller.platform && !seller.self">
+        <button class="btn btn-sm" :class="{ 'btn-primary': !seller.following }"
+                :disabled="following" @click="toggleFollowSeller">
+          <ui-icon :name="seller.following ? 'check' : 'plus'" :size="14"></ui-icon>
+          {{ seller.following ? '已关注' : '关注' }}
+        </button>
+        <button class="btn btn-sm btn-dark" @click="openChat">
+          <ui-icon name="chat" :size="14"></ui-icon> 发消息
+        </button>
+      </div>
+    </div>
+
     <!-- 商品详情 -->
     <div class="card" style="margin-top:20px;padding:22px 24px">
       <div class="sec-title" style="font-size:16px;margin-bottom:14px">商品详情</div>
@@ -132,7 +160,7 @@ DH.views['detail-view'] = {
 
   props: { pid: { type: String, default: '' } },
   data: function () {
-    return { p: null, related: [], qty: 1, viewIdx: 0, loading: false, err: '' };
+    return { p: null, seller: null, following: false, related: [], qty: 1, viewIdx: 0, loading: false, err: '' };
   },
   computed: {
     /* 多图：images 按 sort 返回，第一张为主图；无 images 时回退主图 */
@@ -157,8 +185,14 @@ DH.views['detail-view'] = {
       this.loading = true;
       this.err = '';
       this.p = null;
+      this.seller = null;
       this.related = [];
       SVC.loadCats().catch(function () {});
+      /* 发布者摘要在商品加载后单独拉取：平台自营时返回 platform=true，不由商品实体携带 */
+      SVC.loadSeller(id).then(function (s) {
+        if (String(self.pid) !== String(id)) return;
+        self.seller = s;
+      }, function () { if (String(self.pid) === String(id)) self.seller = null; });
       DH.api.request('GET', '/products/' + id).then(function (d) {
         if (String(self.pid) !== String(id)) return;
         self.p = SVC.adapt(d);
@@ -204,6 +238,20 @@ DH.views['detail-view'] = {
       this.fixQty();
       if (this.p.stock <= 0) return this.toast('该商品暂时缺货', '⚠️');
       SVC.addCart(this.p.id, this.qty, true).then(function (ok) { if (ok) self.go('/checkout'); });
+    },
+    /* 关注 / 取消关注发布者：未登录先引导登录 */
+    toggleFollowSeller: function () {
+      if (!this.store.user) return this.go('/user?tab=login');
+      if (!this.seller || this.seller.platform || this.seller.self) return;
+      var self = this;
+      this.following = true;
+      SVC.toggleFollow(this.seller).then(function () { self.following = false; });
+    },
+    /* 发消息：带入卖家 id，个人中心消息页据此直接打开会话 */
+    openChat: function () {
+      if (!this.store.user) return this.go('/user?tab=login');
+      if (!this.seller || !this.seller.id) return;
+      this.go('/user?tab=msg&to=' + this.seller.id);
     }
   }
 };
