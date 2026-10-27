@@ -89,7 +89,7 @@ DH.views['checkout-view'] = {
         <div class="coup-pick" @click="couponOpen=!couponOpen">
           <span class="coup-cur">
             <template v-if="usedCoupon">-¥{{ money(pv.price.discount) }} · {{ usedCoupon.name }}</template>
-            <template v-else-if="usableCoupons.length">有 {{ usableCoupons.length }} 张可用</template>
+            <template v-else-if="usableCoupons.length">共 {{ usableCoupons.length }} 张可用，已自动为您匹配最优</template>
             <template v-else>暂无可用优惠券</template>
           </span>
           <span class="coup-go">{{ couponOpen ? '收起' : '选择' }}<ui-icon name="arrowRight" :size="13"></ui-icon></span>
@@ -120,7 +120,7 @@ DH.views['checkout-view'] = {
           <div class="k">配送方式</div>
           <div class="opt">
             <span class="tag"><ui-icon name="truck" :size="14"></ui-icon> 标准配送（48 小时内发出）</span>
-            <span class="tag" v-if="pv.price.freeShipping">已满 {{ money(pv.freeThreshold) }} 免运费</span>
+            <span class="tag" v-if="pv.price.freeShipping">已满 ¥{{ money(pv.freeThreshold) }} 免运费</span>
           </div>
         </div>
         <div class="pay-grid">
@@ -152,7 +152,7 @@ DH.views['checkout-view'] = {
       </div>
       <div class="sum-line total"><span>应付</span><span class="v">¥{{ money(pv.price.payAmount) }}</span></div>
       <p class="co-tip" v-if="pv.price.freight>0">
-        再买 ¥{{ money(pv.freeThreshold - pv.price.goodsAmount) }} 可免运费
+        再选购 ¥{{ money(pv.freeThreshold - pv.price.goodsAmount) }} 商品即可免运费
       </p>
 
       <div class="co-addr-mini">
@@ -181,19 +181,19 @@ DH.views['checkout-view'] = {
         <button class="close" @click="showAddr=false">✕</button></div>
       <div class="modal-bd">
         <div class="frow">
-          <div><label class="lbl">收货人<span class="req">*</span></label>
-            <input class="field" v-model.trim="af.receiverName" placeholder="请输入姓名"></div>
-          <div><label class="lbl">联系电话<span class="req">*</span></label>
-            <input class="field" v-model.trim="af.receiverPhone" placeholder="11 位手机号"></div>
+          <div><label class="lbl">收货人姓名<span class="req">*</span></label>
+            <input class="field" v-model.trim="af.receiverName" placeholder="请输入收货人姓名"></div>
+          <div><label class="lbl">手机号码<span class="req">*</span></label>
+            <input class="field" v-model.trim="af.receiverPhone" placeholder="请输入 11 位手机号码"></div>
         </div>
         <div class="frow" style="margin-top:14px">
-          <div><label class="lbl">省</label><input class="field" v-model.trim="af.province" placeholder="如：北京市"></div>
-          <div><label class="lbl">市</label><input class="field" v-model.trim="af.city" placeholder="如：北京市"></div>
+          <div><label class="lbl">省份</label><input class="field" v-model.trim="af.province" placeholder="例如：北京市"></div>
+          <div><label class="lbl">城市</label><input class="field" v-model.trim="af.city" placeholder="例如：上海市"></div>
         </div>
-        <div style="margin-top:14px"><label class="lbl">区 / 县</label>
-          <input class="field" v-model.trim="af.district" placeholder="如：朝阳区"></div>
-        <div style="margin-top:14px"><label class="lbl">详细地址<span class="req">*</span></label>
-          <input class="field" v-model.trim="af.detail" placeholder="如：甲 1 号院 2 号楼 303 室"></div>
+        <div style="margin-top:14px"><label class="lbl">区县</label>
+          <input class="field" v-model.trim="af.district" placeholder="例如：浦东新区"></div>
+        <div style="margin-top:14px"><label class="lbl">详细地址（街道、门牌号等）<span class="req">*</span></label>
+          <input class="field" v-model.trim="af.detail" placeholder="例如：XX 路 88 号 2 栋 303 室"></div>
         <label class="co-check">
           <input type="checkbox" class="check" v-model="af.isDefault"> 设为默认收货地址</label>
       </div>
@@ -312,8 +312,8 @@ DH.views['checkout-view'] = {
     saveAddr: function () {
       var self = this, a = this.af;
       if (!a.receiverName) return this.toast('请填写收货人姓名', '⚠️');
-      if (!/^\d{6,20}$/.test(a.receiverPhone || '')) return this.toast('请填写正确的联系电话', '⚠️');
-      if (!a.detail) return this.toast('请填写详细地址', '⚠️');
+      if (!/^\d{6,20}$/.test(a.receiverPhone || '')) return this.toast('请填写 11 位手机号码', '⚠️');
+      if (!a.detail) return this.toast('请填写详细地址（街道及门牌号）', '⚠️');
       this.saving = true;
       SVC.saveAddress({
         receiverName: a.receiverName,

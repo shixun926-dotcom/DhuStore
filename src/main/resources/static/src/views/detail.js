@@ -124,14 +124,14 @@ DH.views['detail-view'] = {
           由东华购物官方发货并提供售后<span v-if="seller.self" class="seller-me">当前登录的正是官方账号</span>
         </div>
         <div class="seller-sub" v-else>
-          <b>{{ seller.followerCount }}</b> 位粉丝<span v-if="seller.self" class="seller-me">这是你自己发布的商品</span>
+          <b>{{ seller.followerCount }}</b> 位用户收藏<span v-if="seller.self" class="seller-me">这是你自己发布的商品</span>
         </div>
       </div>
       <div class="seller-acts" v-if="!seller.platform && !seller.self">
         <button class="btn btn-sm" :class="{ 'btn-primary': !seller.following }"
                 :disabled="following" @click="toggleFollowSeller">
           <ui-icon :name="seller.following ? 'check' : 'plus'" :size="14"></ui-icon>
-          {{ seller.following ? '已关注' : '关注' }}
+          {{ seller.following ? '已收藏' : '收藏店铺' }}
         </button>
         <button class="btn btn-sm btn-dark" @click="openChat">
           <ui-icon name="chat" :size="14"></ui-icon> 发消息
@@ -147,7 +147,7 @@ DH.views['detail-view'] = {
       <div class="sec-title" style="font-size:16px;margin-bottom:14px">商品详情</div>
       <p class="detail-rich" v-if="p.detail">{{ p.detail }}</p>
       <p v-else style="font-size:13.5px;color:var(--ink-3);line-height:1.9">
-        该商品尚未填写详情描述。可在管理后台编辑商品补充 <code>detail</code> 字段。
+        暂无商品详情。商家暂未补充图文介绍，可先通过上方图片与规格了解商品。
       </p>
     </div>
 
@@ -246,13 +246,17 @@ DH.views['detail-view'] = {
       if (!SVC.requireLogin()) return;
       this.go('/checkout', 'buy=' + this.p.id + '&qty=' + this.qty);
     },
-    /* 关注 / 取消关注发布者：未登录先引导登录 */
+    /* 收藏 / 取消收藏店铺：未登录先引导登录（底层复用关注关系，仅在商品详情语境呈现为「收藏」） */
     toggleFollowSeller: function () {
       if (!this.store.user) return this.go('/user?tab=login');
       if (!this.seller || this.seller.platform || this.seller.self) return;
       var self = this;
       this.following = true;
-      SVC.toggleFollow(this.seller).then(function () { self.following = false; });
+      SVC.toggleFollow(this.seller).then(function (next) {
+        self.following = false;
+        /* 覆盖共享关注方法的通用提示，商品详情语境下统一为「收藏」语义 */
+        self.toast(next ? '已收藏该店铺' : '已取消收藏', next ? '✅' : '👋');
+      });
     },
     /* 发消息：带入卖家 id，个人中心消息页据此直接打开会话 */
     openChat: function () {
