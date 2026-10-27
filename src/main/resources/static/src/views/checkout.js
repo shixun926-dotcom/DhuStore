@@ -15,7 +15,7 @@ DH.views['checkout-view'] = {
   template: `
 <div>
   <div class="steps">
-    <div class="s"><i>1</i>我的购物车</div><div class="ln"></div>
+    <div class="s"><i>1</i>{{ buy ? '确认商品' : '我的购物车' }}</div><div class="ln"></div>
     <div class="s on"><i>2</i>填写订单信息</div><div class="ln"></div>
     <div class="s"><i>3</i>提交订单</div>
   </div>
@@ -29,11 +29,12 @@ DH.views['checkout-view'] = {
   </div>
 
   <div v-else-if="!pv || !pv.items.length" class="state card">
-    <div class="ico"><ui-icon name="receipt" :size="34"></ui-icon></div><div class="t">没有待结算的商品</div>
-    <div class="d">购物车里还没有勾选商品。先去挑几件，或在购物车里勾选要结算的商品。</div>
+    <div class="ico"><ui-icon name="receipt" :size="34"></ui-icon></div>
+    <div class="t">{{ buy ? '商品信息加载失败' : '没有待结算的商品' }}</div>
+    <div class="d">{{ buy ? '该商品可能已下架或库存不足，请返回详情页重新选择。' : '购物车里还没有勾选商品。先去挑几件，或在购物车里勾选要结算的商品。' }}</div>
     <div class="acts">
-      <button class="btn btn-primary" @click="go('/list')">去逛逛</button>
-      <button class="btn" @click="go('/cart')">返回购物车</button>
+      <button class="btn btn-primary" @click="go(buy ? ('/detail/'+buy.productId) : '/list')">{{ buy ? '返回商品' : '去逛逛' }}</button>
+      <button v-if="!buy" class="btn" @click="go('/cart')">返回购物车</button>
     </div>
   </div>
 
@@ -61,9 +62,12 @@ DH.views['checkout-view'] = {
 
       <!-- 商品清单 -->
       <div class="card">
-        <div class="co-hd"><h3>商品清单</h3><span>{{ totalQty }} 件</span></div>
+        <div class="co-hd">
+          <h3>商品清单<span class="tag tag-brand" v-if="buy" style="margin-left:8px">立即购买</span></h3>
+          <span>{{ totalQty }} 件</span>
+        </div>
         <div class="co-goods">
-          <div class="og" v-for="it in pv.items" :key="it.cartItemId">
+          <div class="og" v-for="it in pv.items" :key="it.cartItemId || ('p'+it.productId)">
             <div class="thumb" :style="{'--h':160}">
               <ui-icon name="box"></ui-icon>
               <img v-if="it.productImage" :src="it.productImage" alt="" class="gone"
@@ -156,12 +160,14 @@ DH.views['checkout-view'] = {
         <span><ui-icon name="user" :size="13"></ui-icon>{{ addr ? addr.receiverName + ' ' + addr.receiverPhone : '—' }}</span>
       </div>
 
+      <div class="co-note" v-if="pv && pv.notice">{{ pv.notice }}</div>
       <div class="co-err" v-if="pv && pv.purchasable===false">{{ pv.errorTip }}</div>
 
       <button class="btn btn-lg btn-primary btn-block" style="margin-top:16px"
               :disabled="!addr || submitting || (pv && pv.purchasable===false)" @click="submit">
         {{ submitting ? '提交中…' : '提交订单' }}</button>
-      <button class="btn btn-block" style="margin-top:10px" @click="go('/cart')">返回购物车</button>
+      <button class="btn btn-block" style="margin-top:10px"
+              @click="go(buy ? ('/detail/'+buy.productId) : '/cart')">{{ buy ? '返回商品' : '返回购物车' }}</button>
       <p class="co-tip" style="text-align:center">
         提交订单即表示同意《东华购物用户协议》
       </p>
@@ -205,6 +211,8 @@ DH.views['checkout-view'] = {
       loading: false, submitting: false,
       pv: null, addrId: null, payment: 1, remark: '',
       couponId: null, couponOpen: false, submitToken: null,
+      /* 非空表示立即购买：只结算该商品，与购物车勾选无关 */
+      buy: null,
       showAddr: false, saving: false, af: U.blankAddr(),
       pays: [
         { k: 1, ic: 'card', t: '在线支付', d: '跳转收银台付款' },
@@ -238,13 +246,23 @@ DH.views['checkout-view'] = {
       })[0] || null;
     }
   },
-  mounted: function () { this.load(); },
+  mounted: function () { this.initBuy(); this.load(); },
   watch: {
     'store.addresses': function () {
       if (!this.addr && this.store.addresses.length) this.pickDefault();
     }
   },
   methods: {
+    /** 解析 #/checkout?buy=<productId>&qty=<n>；无 buy 参数即普通购物车结算 */
+    initBuy: function () {
+      var q = (this.route && this.route.query) || {};
+      if (q.buy) {
+        this.buy = {
+          productId: Number(q.buy),
+          quantity: Math.max(1, Math.floor(Number(q.qty) || 1))
+        };
+      }
+    },
     load: function () {
       var self = this;
       if (!this.store.user) return;
@@ -266,7 +284,7 @@ DH.views['checkout-view'] = {
     },
     refreshPreview: function () {
       var self = this;
-      return SVC.previewOrder(this.couponId).then(function (pv) {
+      return SVC.previewOrder(this.couponId, this.buy).then(function (pv) {
         self.pv = pv;
         /* 券失效后服务端不再计入优惠，这里同步清空选中，避免界面与实际不一致 */
         if (self.couponId && !(pv.price && String(pv.price.couponId) === String(self.couponId))) {
@@ -321,13 +339,18 @@ DH.views['checkout-view'] = {
       if (!this.pv || !this.pv.items.length) return this.toast('没有可结算的商品', '⚠️');
       if (this.pv.purchasable === false) return this.toast(this.pv.errorTip || '商品不可购买', '⚠️');
       this.submitting = true;
-      SVC.createOrder({
+      var payload = {
         addressId: this.addr.id,
         payment: this.payment,
         remark: this.remark || '',
         couponId: this.couponId,
         submitToken: this.submitToken
-      }).then(function (order) {
+      };
+      if (this.buy) {
+        payload.buyNowProductId = this.buy.productId;
+        payload.buyNowQuantity = this.buy.quantity;
+      }
+      SVC.createOrder(payload).then(function (order) {
         self.submitting = false;
         /* 令牌已消费，立即置空避免二次提交复用 */
         self.submitToken = null;

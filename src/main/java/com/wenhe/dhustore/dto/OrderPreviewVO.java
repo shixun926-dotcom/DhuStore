@@ -25,6 +25,8 @@ public class OrderPreviewVO {
     private Boolean purchasable;
     /** 不可购买的具体提示 */
     private String errorTip;
+    /** 非阻断性提示，例如「2 件商品已失效，未参与本次结算」 */
+    private String notice;
 
     @Data
     public static class PreviewItem {

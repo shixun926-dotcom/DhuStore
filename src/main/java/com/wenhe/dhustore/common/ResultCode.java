@@ -34,6 +34,9 @@ public enum ResultCode {
     CATEGORY_NAME_EXISTS(2013, "分类名称已存在"),
     FLASH_DUPLICATE(2014, "该商品已在秒杀列表中"),
     FLASH_LIMIT(2015, "限时秒杀最多 8 件商品"),
+    CART_ITEM_NOT_FOUND(2016, "购物车项不存在"),
+    PRODUCT_UNAVAILABLE(2017, "商品已下架或库存不足"),
+    CART_ITEM_LIMIT(2018, "购物车商品种类已达上限"),
 
     FOLLOW_SELF(3001, "不能关注自己"),
     CONVERSATION_NOT_FOUND(3002, "会话不存在或无权访问"),

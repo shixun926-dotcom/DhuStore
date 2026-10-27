@@ -64,13 +64,19 @@ function adapt(p) {
 /** 后端 CartItemVO → 视图对象（checked 归一成 0/1，quantity 至少为 1） */
 function adaptCart(it) {
   var m = S().pmeta[it.productId] || {};
+  var stock = Number(it.stock) || 0;
+  /* status 为 null 表示商品已被删除；0 下架 / 1 在售 */
+  var status = (it.status === null || it.status === undefined) ? null : Number(it.status);
   return {
     id: it.id,
     productId: it.productId,
     productName: it.productName || m.name || '商品',
     mainImage: it.mainImage || m.mainImage || '',
     price: Number(it.price) || 0,
-    stock: Number(it.stock) || 0,
+    stock: stock,
+    status: status,
+    /* 失效行：已删除 / 已下架 / 无库存。前端据此置灰并禁止勾选 */
+    available: status === 1 && stock > 0,
     quantity: Math.max(1, Number(it.quantity) || 1),
     checked: Number(it.checked) === 1 ? 1 : 0,
     emoji: m.emoji || '🛍️',
@@ -224,8 +230,12 @@ function requireLogin() {
 function addCart(productId, qty, silent) {
   if (!requireLogin()) return Promise.resolve(false);
   var n = Math.max(1, Math.floor(Number(qty) || 1));
-  return api('POST', '/cart', { productId: Number(productId), quantity: n }).then(function () {
-    if (!silent) DH.toast('已加入购物车', '🛒');
+  return api('POST', '/cart', { productId: Number(productId), quantity: n }).then(function (total) {
+    /* 后端返回合并后的件数；超过库存时会被封顶，据此提示更准确 */
+    if (!silent) {
+      var had = typeof total === 'number' && total > 0;
+      DH.toast(had ? ('已加入购物车，该商品共 ' + total + ' 件') : '已加入购物车', '🛒');
+    }
     return loadCart().then(function () { return true; }, function () { return true; });
   }, function (e) {
     if (e !== U.HANDLED && !silent) DH.toast(U.errMsg(e), '⚠️');
@@ -273,31 +283,47 @@ function toggleCartLine(line, checked) {
     });
 }
 
-/** 全选 / 全不选；后端无批量接口，逐行并发提交后重拉 */
+/** 全选 / 全不选。服务端只作用于在售且有库存的行，返回受影响条数 */
 function setAllChecked(checked) {
-  var lines = S().cart.slice();
-  if (!lines.length) return Promise.resolve(false);
+  if (!S().cart.length) return Promise.resolve(false);
   S().busy = true;
-  return Promise.all(lines.map(function (it) {
-    if ((it.checked === 1) === !!checked) return null;
-    return api('PUT', '/cart/' + it.id, { quantity: it.quantity, checked: checked ? 1 : 0 })
-      .then(function () { it.checked = checked ? 1 : 0; }, function () {});
-  })).then(function () {
+  return api('PUT', '/cart/checked-all', { checked: checked ? 1 : 0 }).then(function () {
     return loadCart().catch(function () {});
   }).then(function () { S().busy = false; return true; },
-          function () { S().busy = false; return false; });
+          function (e) {
+            S().busy = false;
+            if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+            return false;
+          });
 }
 
+/** 删除选中：走批量接口，一次往返 */
 function clearChecked() {
   var lines = S().cart.filter(function (i) { return i.checked === 1; });
   if (!lines.length) return Promise.resolve(false);
   S().busy = true;
-  return Promise.all(lines.map(function (it) {
-    return api('DELETE', '/cart/' + it.id).catch(function () {});
-  })).then(function () {
-    DH.toast('已删除 ' + lines.length + ' 项', '🗑️');
+  var ids = lines.map(function (i) { return i.id; }).join(',');
+  return api('DELETE', '/cart/batch?ids=' + ids).then(function (n) {
+    DH.toast('已删除 ' + (Number(n) || lines.length) + ' 项', '🗑️');
     return loadCart().catch(function () {});
-  }).then(function () { S().busy = false; return true; },
+  }, function (e) {
+    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+    return false;
+  }).then(function (r) { S().busy = false; return r; },
+          function () { S().busy = false; return false; });
+}
+
+/** 一键清理失效商品（已下架 / 已删除 / 无库存） */
+function clearUnavailableCart() {
+  S().busy = true;
+  return api('DELETE', '/cart/unavailable').then(function (n) {
+    var c = Number(n) || 0;
+    DH.toast(c > 0 ? ('已清理 ' + c + ' 件失效商品') : '没有需要清理的商品', '🧹');
+    return loadCart().catch(function () {});
+  }, function (e) {
+    if (e !== U.HANDLED) DH.toast(U.errMsg(e), '⚠️');
+    return false;
+  }).then(function (r) { S().busy = false; return r; },
           function () { S().busy = false; return false; });
 }
 
@@ -325,9 +351,19 @@ function loadPending() {
 }
 
 /** 结算页试算：金额明细 + 可用券 + 商品可购买性，与下单同一套计算 */
-function previewOrder(couponId) {
-  var q = couponId ? ('?couponId=' + encodeURIComponent(couponId)) : '';
-  return api('GET', '/orders/preview' + q);
+/**
+ * 结算试算。
+ * @param couponId 用户券 id
+ * @param buyNow   {productId, quantity} 非空表示立即购买，只算该商品，不读购物车
+ */
+function previewOrder(couponId, buyNow) {
+  var q = [];
+  if (couponId) q.push('couponId=' + encodeURIComponent(couponId));
+  if (buyNow && buyNow.productId) {
+    q.push('buyNowProductId=' + encodeURIComponent(buyNow.productId));
+    q.push('buyNowQuantity=' + encodeURIComponent(buyNow.quantity || 1));
+  }
+  return api('GET', '/orders/preview' + (q.length ? '?' + q.join('&') : ''));
 }
 
 /** 一次性提交令牌，进入结算页时领取，提交时回传，服务端据此去重 */
@@ -798,6 +834,7 @@ DH.services = {
   loadCart: loadCart, requireLogin: requireLogin, addCart: addCart,
   removeCart: removeCart, setCartQty: setCartQty, toggleCartLine: toggleCartLine,
   setAllChecked: setAllChecked, clearChecked: clearChecked,
+  clearUnavailableCart: clearUnavailableCart,
   /* 订单 */
   loadOrders: loadOrders, loadPending: loadPending, createOrder: createOrder,
   previewOrder: previewOrder, newSubmitToken: newSubmitToken, pageOrders: pageOrders,

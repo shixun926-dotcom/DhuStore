@@ -22,4 +22,13 @@ public class OrderCreateRequest {
      * 同一令牌重复提交只会产生一笔订单，服务端据此返回已创建的订单。
      */
     private String submitToken;
+
+    /**
+     * 立即购买：指定商品直接下单，不读购物车、也不删除购物车。
+     * 与购物车下单走同一套算价与扣库存逻辑，二选一，不能同时生效。
+     */
+    private Long buyNowProductId;
+
+    /** 立即购买数量，缺省 1 */
+    private Integer buyNowQuantity;
 }

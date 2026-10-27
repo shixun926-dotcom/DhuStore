@@ -29,11 +29,17 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    /** 结算页试算：金额明细 + 可用券 + 商品可购买性 */
+    /**
+     * 结算页试算：金额明细 + 可用券 + 商品可购买性。
+     * 传 buyNowProductId 表示立即购买，只试算该商品，不读购物车勾选。
+     */
     @GetMapping("/preview")
     @RequireLogin
-    public Result<OrderPreviewVO> preview(@RequestParam(required = false) Long couponId) {
-        return Result.success(orderService.preview(UserContext.getUserId(), couponId));
+    public Result<OrderPreviewVO> preview(@RequestParam(required = false) Long couponId,
+                                          @RequestParam(required = false) Long buyNowProductId,
+                                          @RequestParam(required = false) Integer buyNowQuantity) {
+        return Result.success(orderService.preview(UserContext.getUserId(), couponId,
+                buyNowProductId, buyNowQuantity));
     }
 
     /** 一次性提交令牌，进入结算页时领取，提交订单时回传 */

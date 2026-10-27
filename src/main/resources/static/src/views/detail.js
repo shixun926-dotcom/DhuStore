@@ -239,12 +239,12 @@ DH.views['detail-view'] = {
       if (this.p.stock <= 0) return this.toast('该商品暂时缺货', '⚠️');
       SVC.addCart(this.p.id, this.qty).then(function (ok) { if (ok) self.go('/cart'); });
     },
-    /* 立即购买 = 加购后直达结算（静默，不重复提示） */
+    /* 立即购买 = 直购结算：只结算当前商品，不写入购物车，也不受购物车勾选影响 */
     buyNow: function () {
-      var self = this;
       this.fixQty();
       if (this.p.stock <= 0) return this.toast('该商品暂时缺货', '⚠️');
-      SVC.addCart(this.p.id, this.qty, true).then(function (ok) { if (ok) self.go('/checkout'); });
+      if (!SVC.requireLogin()) return;
+      this.go('/checkout', 'buy=' + this.p.id + '&qty=' + this.qty);
     },
     /* 关注 / 取消关注发布者：未登录先引导登录 */
     toggleFollowSeller: function () {

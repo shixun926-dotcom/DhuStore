@@ -65,7 +65,8 @@ var MIXIN = {
       return DH.store.cart.reduce(function (s, i) { return s + (Number(i.quantity) || 0); }, 0);
     },
     checkedItems: function () {
-      return DH.store.cart.filter(function (i) { return i.checked === 1; });
+      /* 失效商品不参与合计与结算件数 */
+      return DH.store.cart.filter(function (i) { return i.checked === 1 && i.available !== false; });
     },
     checkedCount: function () {
       return this.checkedItems.reduce(function (s, i) { return s + (Number(i.quantity) || 0); }, 0);
@@ -74,7 +75,9 @@ var MIXIN = {
       return this.checkedItems.reduce(function (s, i) { return s + i.price * i.quantity; }, 0);
     },
     allChecked: function () {
-      return DH.store.cart.length > 0 && DH.store.cart.every(function (i) { return i.checked === 1; });
+      /* 全选只针对可结算商品：失效行始终不参与，避免结算页被整体阻断 */
+      var list = DH.store.cart.filter(function (i) { return i.available !== false; });
+      return list.length > 0 && list.every(function (i) { return i.checked === 1; });
     }
   },
   methods: {

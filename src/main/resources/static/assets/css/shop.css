@@ -254,6 +254,20 @@
 .cart-bar .total .n{font-size:24px;font-weight:800;color:var(--brand);letter-spacing:-.6px;
   font-variant-numeric:tabular-nums;}
 
+/* 失效商品区：置灰、不可勾选、不参与合计 */
+.inv-block.gap{margin-top:16px;}
+.inv-hd{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--line-2);flex-wrap:wrap;}
+.inv-hd .inv-t{font-size:14px;font-weight:600;color:var(--ink-2);}
+.inv-hd .inv-d{font-size:12.5px;color:var(--ink-3);}
+.inv-hd .btn{margin-left:auto;}
+.cart-item.off{background:var(--bg-2,#fafafa);}
+.cart-item.off .thumb{filter:grayscale(1);opacity:.55;}
+.cart-item.off .nm{color:var(--ink-3);cursor:default;}
+.cart-item.off .nm:hover{color:var(--ink-3);}
+.cart-item.off .sub{color:var(--ink-3);font-weight:600;}
+.cart-item.off .check{cursor:not-allowed;opacity:.45;}
+.inv-qty{font-size:13px;color:var(--ink-3);}
+
 /* ============================================================== 5. 结算 */
 .steps{display:flex;align-items:center;gap:10px;margin:16px 0 20px;font-size:13px;color:var(--ink-3);}
 .steps .s{display:flex;align-items:center;gap:8px;}
@@ -657,6 +671,8 @@
 .co-addr-mini span{display:flex;align-items:flex-start;gap:5px;line-height:1.5;}
 .co-err{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);background:#fdf3f3;
   border:1px solid #f2d4d4;color:var(--crit);font-size:12.5px;}
+.co-note{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);background:#fdf8e8;
+  border:1px solid #f0e2bd;color:#8a6614;font-size:12.5px;}
 .co-check{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;color:var(--ink-2);}
 
 /* ---------- 收银台 ---------- */

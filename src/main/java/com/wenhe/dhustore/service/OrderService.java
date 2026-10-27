@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -81,7 +82,16 @@ public class OrderService {
      * 与 create 共用 PricingService，保证展示价与实付价完全一致。
      */
     public OrderPreviewVO preview(Long userId, Long userCouponId) {
-        List<CartItem> checked = checkedCart(userId);
+        return preview(userId, userCouponId, null, null);
+    }
+
+    /**
+     * @param buyNowProductId 非空表示「立即购买」：只结算该商品，与购物车勾选状态无关
+     * @param buyNowQuantity  立即购买数量，缺省 1
+     */
+    public OrderPreviewVO preview(Long userId, Long userCouponId,
+                                  Long buyNowProductId, Integer buyNowQuantity) {
+        List<Line> lines = resolveLines(userId, buyNowProductId, buyNowQuantity);
 
         OrderPreviewVO vo = new OrderPreviewVO();
         vo.setPayTimeoutMinutes(payTimeoutMinutes);
@@ -92,12 +102,12 @@ public class OrderService {
         boolean purchasable = true;
         String errorTip = null;
 
-        for (CartItem c : checked) {
-            Product p = productMapper.findById(c.getProductId());
+        for (Line line : lines) {
+            Product p = productMapper.findById(line.productId);
             OrderPreviewVO.PreviewItem item = new OrderPreviewVO.PreviewItem();
-            item.setCartItemId(c.getId());
-            item.setProductId(c.getProductId());
-            item.setQuantity(c.getQuantity());
+            item.setCartItemId(line.cartItemId);
+            item.setProductId(line.productId);
+            item.setQuantity(line.quantity);
             if (p == null) {
                 item.setProductName("商品已下架");
                 item.setAvailable(false);
@@ -106,7 +116,7 @@ public class OrderService {
                 items.add(item);
                 continue;
             }
-            int qty = c.getQuantity() == null ? 1 : c.getQuantity();
+            int qty = line.quantity;
             BigDecimal subtotal = p.getPrice().multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
             item.setProductName(p.getName());
             item.setProductImage(p.getMainImage());
@@ -154,6 +164,13 @@ public class OrderService {
         vo.setCoupons(coupons);
         vo.setPurchasable(purchasable);
         vo.setErrorTip(errorTip);
+        /* 失效商品已从结算范围剔除，这里告知用户被排除的件数，避免「勾了却没结算」的困惑 */
+        if (buyNowProductId == null) {
+            int excluded = cartItemMapper.countInvalidChecked(userId);
+            if (excluded > 0) {
+                vo.setNotice(excluded + " 件商品已失效，未参与本次结算");
+            }
+        }
         return vo;
     }
 
@@ -178,11 +195,11 @@ public class OrderService {
             throw new BusinessException(ResultCode.NOT_FOUND);
         }
 
-        List<CartItem> checked = checkedCart(userId);
-        if (checked.isEmpty()) {
+        List<Line> lines = resolveLines(userId, req.getBuyNowProductId(), req.getBuyNowQuantity());
+        if (lines.isEmpty()) {
             throw new BusinessException(ResultCode.CART_EMPTY);
         }
-        if (checked.size() > MAX_ITEMS) {
+        if (lines.size() > MAX_ITEMS) {
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "单笔订单商品种类不能超过 " + MAX_ITEMS);
         }
 
@@ -190,12 +207,12 @@ public class OrderService {
         List<OrderItem> items = new ArrayList<>();
         Map<Long, BigDecimal> categoryAmounts = new HashMap<>();
         BigDecimal goodsAmount = BigDecimal.ZERO;
-        for (CartItem c : checked) {
-            int qty = c.getQuantity() == null ? 1 : c.getQuantity();
+        for (Line line : lines) {
+            int qty = line.quantity;
             if (qty <= 0 || qty > MAX_QUANTITY) {
                 throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "购买数量不合法");
             }
-            Product p = productMapper.findById(c.getProductId());
+            Product p = productMapper.findById(line.productId);
             if (p == null || p.getStatus() == null || p.getStatus() == 0) {
                 throw new BusinessException(ResultCode.NOT_FOUND.getCode(), "有商品已下架，请返回购物车调整");
             }
@@ -263,8 +280,12 @@ public class OrderService {
             }
         }
 
-        cartItemMapper.deleteByIds(userId,
-                checked.stream().map(CartItem::getId).collect(Collectors.toList()));
+        /* 只清理来自购物车的行；直购商品未进入购物车，不能误删 */
+        List<Long> cartIds = lines.stream().map(l -> l.cartItemId)
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        if (!cartIds.isEmpty()) {
+            cartItemMapper.deleteByIds(userId, cartIds);
+        }
 
         if (token != null && !token.isBlank()) {
             /* 令牌被并发请求抢先消费：本笔回滚，提示重复提交 */
@@ -475,10 +496,44 @@ public class OrderService {
         }
     }
 
+    /**
+     * 待结算的购物车行：勾选且在售有货。
+     * 失效行不入单，避免「加入购物车后商品下架」把整笔订单卡住。
+     */
     private List<CartItem> checkedCart(Long userId) {
-        return cartItemMapper.findByUserId(userId).stream()
-                .filter(c -> c.getChecked() != null && c.getChecked() == 1)
-                .collect(Collectors.toList());
+        return cartItemMapper.findCheckedAvailableByUserId(userId);
+    }
+
+    /**
+     * 统一的待下单明细：来自购物车勾选时 cartItemId 非空，来自「立即购买」时为空。
+     * 两种来源后续共用同一套算价、扣库存与快照逻辑，避免两套实现产生口径差异。
+     */
+    private static final class Line {
+        final Long cartItemId;
+        final Long productId;
+        final int quantity;
+
+        Line(Long cartItemId, Long productId, int quantity) {
+            this.cartItemId = cartItemId;
+            this.productId = productId;
+            this.quantity = quantity;
+        }
+    }
+
+    private List<Line> resolveLines(Long userId, Long buyNowProductId, Integer buyNowQuantity) {
+        if (buyNowProductId != null) {
+            int qty = buyNowQuantity == null ? 1 : buyNowQuantity;
+            if (qty <= 0 || qty > MAX_QUANTITY) {
+                throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "购买数量不合法");
+            }
+            return List.of(new Line(null, buyNowProductId, qty));
+        }
+        List<Line> lines = new ArrayList<>();
+        for (CartItem c : checkedCart(userId)) {
+            lines.add(new Line(c.getId(), c.getProductId(),
+                    c.getQuantity() == null ? 1 : c.getQuantity()));
+        }
+        return lines;
     }
 
     private Order getOwned(Long userId, String orderNo) {
