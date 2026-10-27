@@ -106,7 +106,11 @@ public class SocialService {
         return vo;
     }
 
-    /** 商品发布者摘要：seller_id 为空视为平台自营，不提供关注与私信 */
+    /**
+     * 商品发布者摘要。
+     * seller_id 为空视为平台自营：不提供关注与私信按钮，但下发官方客服账号，
+     * 由前端把整张卡片做成「前往会话」的入口。
+     */
     public SellerVO sellerOfProduct(Long productId, Long meId) {
         Product product = productMapper.findById(productId);
         if (product == null) {
@@ -115,11 +119,14 @@ public class SocialService {
         User seller = product.getSellerId() == null ? null : userMapper.findById(product.getSellerId());
         SellerVO vo = new SellerVO();
         if (seller == null) {
+            User official = userMapper.findPlatformAccount();
             vo.setPlatform(true);
             vo.setNickname("东华自营");
             vo.setFollowing(false);
-            vo.setSelf(false);
+            vo.setSelf(meId != null && official != null && meId.equals(official.getId()));
             vo.setFollowerCount(0L);
+            /* 没有可用管理员账号时保持为空，前端据此提示而非跳转 */
+            vo.setServiceUserId(official == null ? null : official.getId());
             return vo;
         }
         vo.setPlatform(false);

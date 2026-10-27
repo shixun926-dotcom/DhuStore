@@ -16,6 +16,15 @@
         WHERE id = #{id}
     </select>
 
+    <!-- 平台官方账号：自营商品没有真实卖家，私信入口指向该账号 -->
+    <select id="findPlatformAccount" resultType="User">
+        SELECT <include refid="cols"/>
+        FROM `user`
+        WHERE role = 1 AND status = 1
+        ORDER BY id ASC
+        LIMIT 1
+    </select>
+
     <select id="countByUsername" resultType="int">
         SELECT COUNT(*) FROM `user` WHERE username = #{username}
     </select>

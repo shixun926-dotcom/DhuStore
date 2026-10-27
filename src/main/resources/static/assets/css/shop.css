@@ -478,6 +478,12 @@
 .seller-sub b{color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:600;}
 .seller-me{margin-left:8px;}
 .seller-acts{display:flex;gap:8px;flex:none;}
+/* 平台自营：整张卡片作为会话入口，右侧只给一个轻量指引，不放按钮 */
+.seller-card.is-link{cursor:pointer;transition:box-shadow .16s;}
+.seller-card.is-link:hover{box-shadow:var(--sh-2);}
+.seller-card.is-link:hover .seller-go{color:var(--brand-d);}
+.seller-go{display:inline-flex;align-items:center;gap:5px;flex:none;margin-left:auto;
+  font-size:12.5px;font-weight:500;color:var(--brand);transition:color .16s;}
 @media (max-width:600px){
   .seller-card{flex-wrap:wrap;}
   .seller-acts{width:100%;}

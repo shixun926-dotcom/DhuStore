@@ -107,8 +107,9 @@ DH.views['detail-view'] = {
       </div>
     </div>
 
-    <!-- 发布者：用户发布的商品展示卖家与关注/私信入口；平台商品显示自营标识 -->
-    <div class="card seller-card" v-if="seller">
+    <!-- 发布者：用户商品可关注/私信；平台自营整卡可点，点击进入与官方账号的会话 -->
+    <div class="card seller-card" v-if="seller" :class="{ 'is-link': seller.platform && !seller.self }"
+         @click="seller.platform && contactOfficial()">
       <div class="seller-av" :class="{ img: !!seller.avatar }">
         <img v-if="seller.avatar" :src="seller.avatar" :alt="seller.nickname">
         <span v-else>{{ (seller.nickname || '店').charAt(0) }}</span>
@@ -117,8 +118,11 @@ DH.views['detail-view'] = {
         <div class="seller-nm">
           {{ seller.nickname }}
           <span class="tag tag-brand" v-if="!seller.platform && seller.role===1">管理员</span>
+          <span class="tag" v-if="seller.platform">官方</span>
         </div>
-        <div class="seller-sub" v-if="seller.platform">由东华购物官方发货并提供售后</div>
+        <div class="seller-sub" v-if="seller.platform">
+          由东华购物官方发货并提供售后<span v-if="seller.self" class="seller-me">当前登录的正是官方账号</span>
+        </div>
         <div class="seller-sub" v-else>
           <b>{{ seller.followerCount }}</b> 位粉丝<span v-if="seller.self" class="seller-me">这是你自己发布的商品</span>
         </div>
@@ -133,6 +137,9 @@ DH.views['detail-view'] = {
           <ui-icon name="chat" :size="14"></ui-icon> 发消息
         </button>
       </div>
+      <span class="seller-go" v-else-if="seller.platform && !seller.self">
+        联系官方客服<ui-icon name="arrowRight" :size="14"></ui-icon>
+      </span>
     </div>
 
     <!-- 商品详情 -->
@@ -252,6 +259,20 @@ DH.views['detail-view'] = {
       if (!this.store.user) return this.go('/user?tab=login');
       if (!this.seller || !this.seller.id) return;
       this.go('/user?tab=msg&to=' + this.seller.id);
+    },
+    /**
+     * 东华自营：没有真实卖家，私信入口指向平台官方账号（后端 role=1 的第一个账号）。
+     * 三种边界：未登录先登录；站点无可用管理员时提示；当前登录就是官方账号则不跳转。
+     */
+    contactOfficial: function () {
+      if (!this.seller || !this.seller.platform) return;
+      var sid = this.seller.serviceUserId;
+      if (!sid) return this.toast('官方客服暂不可用，请稍后再试', '⚠️');
+      if (!this.store.user) return this.go('/user?tab=login');
+      if (String(this.store.user.id) === String(sid)) {
+        return this.toast('当前登录的正是官方账号', '⚠️');
+      }
+      this.go('/user?tab=msg&to=' + sid);
     }
   }
 };
