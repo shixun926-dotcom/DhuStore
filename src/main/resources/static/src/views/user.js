@@ -65,61 +65,80 @@ DH.views['user-view'] = {
           <div><b>{{ store.addresses.length }}</b><small>地址</small></div>
         </div>
       </div>
-      <div class="card" style="margin-top:14px;padding:6px 0">
-        <a class="side-link" v-for="m in menus" :key="m.k" href="#" @click.prevent="tab=m.k"
-           :style="{display:'flex',alignItems:'center',gap:'10px',padding:'11px 16px',fontSize:'13.5px',
-                    color: tab===m.k ? 'var(--brand)' : 'var(--ink-2)',
-                    background: tab===m.k ? 'var(--brand-l2)' : 'transparent',
-                    borderLeft: '3px solid ' + (tab===m.k ? 'var(--brand)' : 'transparent'),
-                    fontWeight: tab===m.k ? 600 : 400}">
+      <nav class="card uc-nav">
+        <a v-for="m in menus" :key="m.k" href="#" @click.prevent="tab=m.k" :class="{ on: tab===m.k }">
           <ui-icon :name="m.ic" :size="16"></ui-icon>{{ m.t }}
         </a>
-        <a href="#" @click.prevent="logout"
-           style="display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13.5px;color:var(--ink-3)"><ui-icon name="logout" :size="16"></ui-icon>退出登录</a>
-      </div>
+        <a href="#" class="out" @click.prevent="logout"><ui-icon name="logout" :size="16"></ui-icon>退出登录</a>
+      </nav>
     </aside>
 
     <div>
       <!-- 个人资料 -->
-      <div class="card pad" v-if="tab==='info'">
-        <h3 style="font-size:16px;font-weight:700;margin-bottom:18px">个人资料</h3>
+      <div class="card uc-panel" v-if="tab==='info'">
+        <header class="uc-hd">
+          <h3>个人资料</h3>
+          <p>维护头像与联系方式，让订单通知更准确</p>
+        </header>
 
         <!-- 头像：选图即本地预览，点「保存修改」才上传并与账号绑定 -->
-        <div class="ava-row">
-          <div class="ava-prev" :class="{ img: !!(avPreview || store.user.avatar) }">
-            <img v-if="avPreview || store.user.avatar" :src="avPreview || store.user.avatar" alt="头像预览">
+        <section class="uc-ident">
+          <div class="uc-av" :class="{ img: !!avSrc }"
+               role="button" tabindex="0" aria-label="更换头像"
+               @click="!saving && $refs.avatarFile.click()"
+               @keyup.enter="!saving && $refs.avatarFile.click()">
+            <img v-if="avSrc" :src="avSrc" alt="头像预览">
             <span v-else>{{ (store.user.nickname || store.user.username).charAt(0) }}</span>
+            <span class="uc-av-mask"><ui-icon name="image" :size="20"></ui-icon></span>
           </div>
-          <div>
-            <div style="display:flex;gap:8px">
+          <div class="uc-ident-tx">
+            <div class="uc-ident-nm">
+              {{ store.user.nickname || store.user.username }}
+              <span class="tag tag-brand">{{ store.user.role===1 ? '超级管理员' : 'V2 黄金会员' }}</span>
+            </div>
+            <div class="uc-ident-un">@{{ store.user.username }}</div>
+            <div class="uc-ident-acts">
               <button class="btn btn-sm" :disabled="saving" @click="$refs.avatarFile.click()">
-                {{ (avPreview || store.user.avatar) ? '更换图片' : '上传头像' }}</button>
-              <button class="btn btn-sm btn-danger" v-if="avPreview || store.user.avatar"
+                {{ avSrc ? '更换图片' : '上传头像' }}</button>
+              <button class="btn btn-sm btn-danger" v-if="avSrc"
                       :disabled="saving" @click="clearAvatar">移除</button>
             </div>
-            <div class="ava-tip">支持 JPG / PNG / WEBP，单张不超过 5MB<br>选图后立即预览，点「保存修改」后生效</div>
           </div>
           <input type="file" ref="avatarFile" accept=".jpg,.jpeg,.png,.webp" style="display:none"
                  @change="onPickAvatar">
-        </div>
-        <div class="frow">
-          <div><label class="lbl">用户名</label><input class="field" :value="store.user.username" disabled></div>
-          <div><label class="lbl">昵称</label><input class="field" v-model.trim="pf.nickname"></div>
-        </div>
-        <div class="frow" style="margin-top:14px">
-          <div><label class="lbl">手机号</label><input class="field" v-model.trim="pf.phone" placeholder="未绑定"></div>
-          <div><label class="lbl">邮箱</label><input class="field" v-model.trim="pf.email" placeholder="未绑定"></div>
-        </div>
-        <div class="notice" style="margin-top:18px" v-if="profileUnsupported">
+        </section>
+
+        <section class="uc-sec">
+          <div class="uc-sec-hd"><h4>基本信息</h4><span>用户名注册后不可修改</span></div>
+          <div class="frow">
+            <div>
+              <label class="lbl">用户名</label>
+              <div class="uc-ro"><ui-icon name="lock" :size="13"></ui-icon>{{ store.user.username }}</div>
+            </div>
+            <div><label class="lbl">昵称</label><input class="field" v-model.trim="pf.nickname" placeholder="设置一个昵称"></div>
+          </div>
+        </section>
+
+        <section class="uc-sec">
+          <div class="uc-sec-hd"><h4>联系方式</h4><span>用于接收订单与审核通知</span></div>
+          <div class="frow">
+            <div><label class="lbl">手机号</label><input class="field" v-model.trim="pf.phone" placeholder="未绑定"></div>
+            <div><label class="lbl">邮箱</label><input class="field" v-model.trim="pf.email" placeholder="未绑定"></div>
+          </div>
+        </section>
+
+        <div class="notice" v-if="profileUnsupported">
           <span class="g"><ui-icon name="alert" :size="20"></ui-icon></span>
           <div>
-            <b>后端暂未提供资料修改接口</b>
-            <p>契约接口为 <code>PUT /api/users/me</code>，接收 <code>{nickname, phone, email, avatar}</code>，
-              返回 <code>{code:200, data:更新后的 UserVO}</code>。后端实现后此表单即可保存。</p>
+            <b>资料修改服务暂不可用</b>
+            <p>请稍后重试，或联系站点管理员处理。</p>
           </div>
         </div>
-        <button class="btn btn-primary" style="margin-top:18px" :disabled="saving" @click="saveInfo">
-          {{ saving ? '保存中…' : '保存修改' }}</button>
+
+        <footer class="uc-foot">
+          <button class="btn btn-primary" :disabled="saving" @click="saveInfo">
+            {{ saving ? '保存中…' : '保存修改' }}</button>
+        </footer>
       </div>
 
       <!-- 收货地址 -->
@@ -273,6 +292,15 @@ DH.views['user-view'] = {
         { k: 'myapply', ic: 'file', t: '我的商品申请' }
       ]
     };
+  },
+  /* 头像展示源：本地预览优先；本次点了移除则回退为首字，保存后由服务端值接管。
+     只影响渲染，提交逻辑仍由 avFile / avRemoved 决定。 */
+  computed: {
+    avSrc: function () {
+      if (this.avPreview) return this.avPreview;
+      if (this.avRemoved) return '';
+      return (this.store.user && this.store.user.avatar) || '';
+    }
   },
   mounted: function () { this.sync(); },
   watch: {
